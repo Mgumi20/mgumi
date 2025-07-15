@@ -11,7 +11,7 @@ const mangayomiSources = [{
     "hasCloudflare": true,
     "sourceCodeUrl": "",
     "apiUrl": "",
-    "version": "1.1.0", // تم تحديث الإصدار وإزالة التعليق
+    "version": "1.0.7",
     "isManga": false,
     "itemType": 1,
     "isFullData": false,
@@ -21,7 +21,6 @@ const mangayomiSources = [{
     "notes": "",
     "pkgPath": "anime/src/en/hstream.js"
 }];
-
 class DefaultExtension extends MProvider {
     constructor() {
         super();
