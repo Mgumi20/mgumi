@@ -11,7 +11,7 @@ const mangayomiSources = [{
     "hasCloudflare": true,
     "sourceCodeUrl": "",
     "apiUrl": "",
-    "version": "1.0.10",
+    "version": "1.0.11",
     "isManga": false,
     "itemType": 1,
     "isFullData": false,
@@ -98,7 +98,6 @@ class DefaultExtension extends MProvider {
         };
     }
     
-    // FIX: تم تحديث الدالة لتطابق منطق Kotlin episodeListParse
     async getDetail(url) {
         const res = await this.client.get(url, this.getHeaders());
         const doc = new Document(res.body);
@@ -116,18 +115,9 @@ class DefaultExtension extends MProvider {
         const genres = doc.select("ul.list-none > li > a").map(it => it.text);
         const status = 1; // 1 = Completed
 
-        // منطق إنشاء "الفصل" بناءً على مثال Kotlin
-        const dateUploadStr = doc.selectFirst("a:has(i.fa-upload)")?.text?.trim();
-        const dateUpload = dateUploadStr ? new Date(dateUploadStr).getTime().toString() : Date.now().toString();
-
-        const numMatch = url.match(/-(\d+)\/?$/);
-        const num = numMatch ? numMatch[1] : "1";
-        const episodeName = `Episode ${num}`;
-
         const chapters = [{
-            name: episodeName,
-            url: url,
-            dateUpload: dateUpload
+            name: "Watch",
+            url: url
         }];
 
         return {
@@ -148,24 +138,23 @@ class DefaultExtension extends MProvider {
         }
         return `/${resolution}/manifest.mpd`;
     }
-    
-    // FIX: تم إصلاح الدالة بالكامل لتطابق منطق Kotlin videoListParse
+
     async getVideoList(url) {
         const initialRes = await this.client.get(url, this.getHeaders());
         const doc = new Document(initialRes.body);
 
+        // FIX: Handle the case where 'Set-Cookie' might be an array
         let setCookieHeader = initialRes.headers['Set-Cookie'] || '';
         if (Array.isArray(setCookieHeader)) {
             setCookieHeader = setCookieHeader.join('; ');
         }
         
         const tokenCookie = setCookieHeader.split(';').find(c => c.trim().startsWith('XSRF-TOKEN='));
+        
         if (!tokenCookie) {
-             throw new Error("Could not find XSRF-TOKEN cookie. Cloudflare might be active.");
+             throw new Error("Could not find XSRF-TOKEN cookie.");
         }
-
-        const tokenValue = tokenCookie.substring(tokenCookie.indexOf('=') + 1);
-        const token = decodeURIComponent(tokenValue);
+        const token = decodeURIComponent(tokenCookie.split('=')[1]);
 
         const episodeId = doc.selectFirst("input#e_id")?.attr("value");
         if (!episodeId) {
@@ -173,15 +162,15 @@ class DefaultExtension extends MProvider {
         }
 
         const apiHeaders = {
-            "Referer": url,
-            "Origin": this.source.baseUrl,
+            ...this.getHeaders(url),
             "X-Requested-With": "XMLHttpRequest",
             "X-XSRF-TOKEN": token,
             "Cookie": setCookieHeader,
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36",
             "Content-Type": "application/json"
         };
-        const apiBody = { "episode_id": episodeId };
+        const apiBody = {
+            "episode_id": episodeId
+        };
 
         const apiRes = await this.client.post(`${this.source.baseUrl}/player/api`, apiHeaders, apiBody);
         const playerData = JSON.parse(apiRes.body);
@@ -192,8 +181,7 @@ class DefaultExtension extends MProvider {
 
         const streams = [];
         const randomDomain = playerData.stream_domains[Math.floor(Math.random() * playerData.stream_domains.length)];
-        // FIX: إضافة بروتوكول https إلى الرابط
-        const streamBaseUrl = `https://${randomDomain}/${playerData.stream_url}`;
+        const streamBaseUrl = `${randomDomain}/${playerData.stream_url}`;
         
         const resolutions = ["720", "1080"];
         if (playerData.resolution === "4k") {
@@ -211,7 +199,7 @@ class DefaultExtension extends MProvider {
                 url: videoUrl,
                 originalUrl: videoUrl,
                 quality: `${res}p`,
-                headers: this.getHeaders(url),
+                headers: this.getHeaders(this.source.baseUrl),
                 subtitles: subtitles,
             });
         }
