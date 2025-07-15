@@ -7,7 +7,7 @@ const mangayomiSources = [{
     "iconUrl": "https://www.google.com/s2/favicons?sz=128&domain=https://animeblkom.net",
     "typeSource": "multi",
     "itemType": 1,
-    "version": "1.0.0",
+    "version": "1.0.1",
     "pkgPath": "anime/src/ar/animeblkom.js"
 }];
 
