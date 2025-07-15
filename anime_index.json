@@ -154,6 +154,28 @@
         "notes": ""
     },
     {
+        "name": "Chatrubate",
+        "id": 192837465,
+        "baseUrl": "https://chaturbate.com",
+        "lang": "en",
+        "typeSource": "single",
+        "iconUrl": "https://www.google.com/s2/favicons?sz=256&domain=chaturbate.com",
+        "dateFormat": "",
+        "dateFormatLocale": "",
+        "isNsfw": true,
+        "hasCloudflare": true,
+        "sourceCodeUrl": "https://raw.githubusercontent.com/Mgumi20/mgumi/refs/heads/main/javascript/anime/src/en/hstream.js",
+        "apiUrl": "",
+        "version": "1.0.0",
+        "isManga": false,
+        "itemType": 1,
+        "isFullData": false,
+        "appMinVerReq": "0.5.0",
+        "additionalParams": "",
+        "sourceCodeLanguage": 1,
+        "notes": ""
+    },
+    {
         "name": "Aniplay",
         "id": 1060895795,
         "baseUrl": "https://aniplaynow.live",
