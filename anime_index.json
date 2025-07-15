@@ -286,6 +286,28 @@
         "notes": ""
     },
     {
+        "name": "AnimeBlkom",
+        "id": 294348492,
+        "baseUrl": "https://animeblkom.net",
+        "lang": "ar",
+        "typeSource": "multi",
+        "iconUrl": "https://www.google.com/s2/favicons?sz=128&domain=https://animeblkom.net",
+        "dateFormat": "",
+        "dateFormatLocale": "",
+        "isNsfw": false,
+        "hasCloudflare": false,
+        "sourceCodeUrl": "https://raw.githubusercontent.com/Swakshan/mangayomi-swak-extensions/refs/heads/main/javascript/anime/src/ar/animeblkom.js",
+        "apiUrl": "",
+        "version": "1.0.1",
+        "isManga": false,
+        "itemType": 1,
+        "isFullData": false,
+        "appMinVerReq": "0.5.0",
+        "additionalParams": "",
+        "sourceCodeLanguage": 1,
+        "notes": ""
+    },
+    {
         "name": "Soaper",
         "id": 764093578,
         "baseUrl": "https://soaper.cc",

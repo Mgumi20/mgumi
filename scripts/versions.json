@@ -32,6 +32,12 @@
         }
     },
     "anime": {
+        "AnimeBlkom": {
+            "name": "AnimeBlkom",
+            "version": "1.0.1",
+            "langs": "ar",
+            "lastUpd": 1752540777.019746
+        },
         "XPrime": {
             "name": "XPrime",
             "version": "2.1.1",

@@ -1,4 +1,4 @@
-# Mgumi20 mgumi
+# Mangayomi Swak Extensions
 
 This repository contains the available javascript extension catalogues for the Mangayomi app.
 
@@ -20,6 +20,7 @@ This repository contains the available javascript extension catalogues for the M
 
 | Name | Version | Language | Last Updated |
 |------|---------|----------|---------------|
+| AnimeBlkom | 1.0.1 | ar | 2025/07/15 06:22 IST |
 | XPrime | 2.1.1 | all | 2025/07/12 22:05 IST |
 | Aniplay | 1.6.4 | en | 2025/07/04 16:09 IST |
 | Aniwatch | 1.0.0 | en | 2025/06/30 23:06 IST |
@@ -52,13 +53,13 @@ This repository contains the available javascript extension catalogues for the M
 
 Click on one of the buttons below to add the corresponding repository/repositories:
 
-<a href="https://intradeus.github.io/http-protocol-redirector?r=mangayomi://add-repo?repo_name=Mgumi20 mgumi%26repo_url=https://github.com/Mgumi20/mgumi%26manga_url=https://raw.githubusercontent.com/Mgumi20/mgumi/refs/heads/main/index.json%26anime_url=https://raw.githubusercontent.com/Mgumi20/mgumi/refs/heads/main/anime_index.json"><img alt="Add all repositories" src="images/add-all-repositories.png" height="35"></a>
+<a href="https://intradeus.github.io/http-protocol-redirector?r=mangayomi://add-repo?repo_name=Mangayomi Swak Extensions%26repo_url=https://github.com/Swakshan/mangayomi-swak-extensions%26manga_url=https://raw.githubusercontent.com/Swakshan/mangayomi-swak-extensions/refs/heads/main/index.json%26anime_url=https://raw.githubusercontent.com/Swakshan/mangayomi-swak-extensions/refs/heads/main/anime_index.json"><img alt="Add all repositories" src="images/add-all-repositories.png" height="35"></a>
 
-<a href="https://intradeus.github.io/http-protocol-redirector?r=mangayomi://add-repo?repo_name=Mgumi20 mgumi%26repo_url=https://github.com/Mgumi20/mgumi%26manga_url=https://raw.githubusercontent.com/Mgumi20/mgumi/refs/heads/main/index.json"><img alt="Add manga repository" src="images/add-manga-repository.png" height="35"></a>
+<a href="https://intradeus.github.io/http-protocol-redirector?r=mangayomi://add-repo?repo_name=Mangayomi Swak Extensions%26repo_url=https://github.com/Swakshan/mangayomi-swak-extensions%26manga_url=https://raw.githubusercontent.com/Swakshan/mangayomi-swak-extensions/refs/heads/main/index.json"><img alt="Add manga repository" src="images/add-manga-repository.png" height="35"></a>
 
-<a href="https://intradeus.github.io/http-protocol-redirector?r=mangayomi://add-repo?repo_name=Mgumi20 mgumi%26repo_url=https://github.com/Mgumi20/mgumi%26anime_url=https://raw.githubusercontent.com/Mgumi20/mgumi/refs/heads/main/anime_index.json"><img alt="Add anime repository" src="images/add-anime-repository.png" height="35"></a>
+<a href="https://intradeus.github.io/http-protocol-redirector?r=mangayomi://add-repo?repo_name=Mangayomi Swak Extensions%26repo_url=https://github.com/Swakshan/mangayomi-swak-extensions%26anime_url=https://raw.githubusercontent.com/Swakshan/mangayomi-swak-extensions/refs/heads/main/anime_index.json"><img alt="Add anime repository" src="images/add-anime-repository.png" height="35"></a>
 
-<a href="https://intradeus.github.io/http-protocol-redirector?r=mangayomi://add-repo?repo_name=Mgumi20 mgumi%26repo_url=https://github.com/Mgumi20/mgumi%26novel_url=https://raw.githubusercontent.com/Mgumi20/mgumi/refs/heads/main/novel_index.json"><img alt="Add novel repository" src="images/add-novel-repository.png" height="35"></a>
+<a href="https://intradeus.github.io/http-protocol-redirector?r=mangayomi://add-repo?repo_name=Mangayomi Swak Extensions%26repo_url=https://github.com/Swakshan/mangayomi-swak-extensions%26novel_url=https://raw.githubusercontent.com/Swakshan/mangayomi-swak-extensions/refs/heads/main/novel_index.json"><img alt="Add novel repository" src="images/add-novel-repository.png" height="35"></a>
 
 If you installed the app via Live Container, then use the following buttons instead:
 
@@ -74,17 +75,17 @@ Or add them manually in the app (More -> Settings -> Browse):
 
 manga repo
 ```
-https://raw.githubusercontent.com/Mgumi20/mgumi/refs/heads/main/index.json
+https://raw.githubusercontent.com/Swakshan/mangayomi-swak-extensions/refs/heads/main/index.json
 ```
 
 anime repo 
 ```
-https://raw.githubusercontent.com/Mgumi20/mgumi/refs/heads/main/anime_index.json
+https://raw.githubusercontent.com/Swakshan/mangayomi-swak-extensions/refs/heads/main/anime_index.json
 ```
 
 novel repo 
 ```
-https://raw.githubusercontent.com/Mgumi20/mgumi/refs/heads/main/novel_index.json
+https://raw.githubusercontent.com/Swakshan/mangayomi-swak-extensions/refs/heads/main/novel_index.json
 ```
 
 # Contributing
@@ -108,6 +109,7 @@ To get started with development, see [CONTRIBUTING-DART.md](./CONTRIBUTING-DART.
     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
     See the License for the specific language governing permissions and
     limitations under the License.
+
 
 
 ## Disclaimer
