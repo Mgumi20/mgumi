@@ -13,7 +13,7 @@ const mangayomiSources = [
     "hasCloudflare": false,
     "sourceCodeUrl": "",
     "apiUrl": "",
-    "version": "1.0.7",
+    "version": "1.0.8",
     "isManga": false,
     "itemType": 1,
     "isFullData": false,
