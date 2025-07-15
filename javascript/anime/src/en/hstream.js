@@ -11,7 +11,7 @@ const mangayomiSources = [{
     "hasCloudflare": true,
     "sourceCodeUrl": "",
     "apiUrl": "",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "isManga": false,
     "itemType": 1,
     "isFullData": false,
@@ -48,7 +48,7 @@ class DefaultExtension extends MProvider {
         for (const item of items) {
             const name = item.selectFirst("img")?.attr("alt") || "No Title";
             const link = this.source.baseUrl + item.getHref;
-            const imageUrl = item.selectFirst("img")?.getSrc;
+            const imageUrl = this.source.baseUrl + item.selectFirst("img")?.getSrc;
 
             // Ensure we only add valid video links
             if (link.includes("/hentai/")) {
