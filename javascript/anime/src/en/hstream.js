@@ -11,7 +11,7 @@ const mangayomiSources = [{
     "hasCloudflare": true,
     "sourceCodeUrl": "",
     "apiUrl": "",
-    "version": "1.1.2",
+    "version": "1.1.3",
     "isManga": false,
     "itemType": 1,
     "isFullData": false,
@@ -81,7 +81,7 @@ class DefaultExtension extends MProvider {
         return { list, hasNextPage: false };
     }
     
-    // FIX: تم تحديث الدالة لتطابق منطق Kotlin episodeListParse
+    // FIX: تم تحديث الدالة بالكامل لتستخدم المنطق الجديد لجلب الحلقات
     async getDetail(url) {
         const res = await this.client.get(url, this.getHeaders());
         const doc = new Document(res.body);
@@ -99,24 +99,40 @@ class DefaultExtension extends MProvider {
         const genres = doc.select("ul.list-none > li > a").map((it) => it.text);
         const status = 1;
 
-        // منطق إنشاء "الفصل" بناءً على مثال Kotlin
-        const dateUploadStr = doc.selectFirst("a:has(i.fa-upload)")?.text?.trim();
-        const dateUpload = dateUploadStr ? new Date(dateUploadStr).getTime().toString() : Date.now().toString();
+        // تطبيق منطق جلب قائمة الحلقات الجديد
+        const chapters = [];
+        // استخدام المحدد الصحيح الذي قدمته
+        const episodeElements = doc.select('ul.inline-block.xl\\:block li');
 
-        const numMatch = url.match(/-(\d+)\/?$/);
-        const num = numMatch ? numMatch[1] : "1";
-        const episodeName = `Episode ${num}`;
-
-        const chapters = [{
-            name: episodeName,
-            url: url,
-            dateUpload: dateUpload
-        }];
+        if (episodeElements.length > 0) {
+            // الحالة الأولى: تم العثور على قائمة حلقات
+            for (const li of episodeElements) {
+                const linkElement = li.selectFirst('a');
+                const nameElement = li.selectFirst('p');
+                if (linkElement && nameElement) {
+                    chapters.push({
+                        name: nameElement.text,
+                        url: linkElement.getHref,
+                    });
+                }
+            }
+        } else {
+            // الحالة الثانية (الاحتياطية): لم يتم العثور على قائمة، نعود للمنطق القديم للفيديو الواحد
+            const dateUploadStr = doc.selectFirst("a:has(i.fa-upload)")?.text?.trim();
+            const dateUpload = dateUploadStr ? new Date(dateUploadStr).getTime().toString() : Date.now().toString();
+            const numMatch = url.match(/-(\d+)\/?$/);
+            const num = numMatch ? numMatch[1] : "1";
+            const episodeName = `Episode ${num}`;
+            chapters.push({
+                name: episodeName,
+                url: url,
+                dateUpload: dateUpload
+            });
+        }
 
         return { name, author, imageUrl, description, genre: genres, status, chapters, link: url };
     }
     
-    // FIX: تم إعادة كتابة الدالة بالكامل لتستخدم الطريقة الجديدة
     async getVideoList(url) {
         const res = await this.client.get(url, this.getHeaders());
         const doc = new Document(res.body);
@@ -130,7 +146,6 @@ class DefaultExtension extends MProvider {
         const streamBaseUrl = subtitleUrl.substring(0, subtitleUrl.lastIndexOf('/') + 1);
 
         const streams = [];
-        // FIX: تم إضافة جودة 2160p
         const resolutions = ["720", "1080", "2160"];
 
         const subtitles = [{
