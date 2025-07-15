@@ -19,7 +19,7 @@ const mangayomiSources = [{
     "additionalParams": "",
     "sourceCodeLanguage": 1,
     "notes": "",
-    "pkgPath": "anime/src/en/hstream.js"
+    "pkgPath": "anime/src/en/chatrubate.js"
 }];
 
 class DefaultExtension extends MProvider {
