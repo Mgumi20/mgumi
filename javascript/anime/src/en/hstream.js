@@ -1,7 +1,7 @@
 const mangayomiSources = [
   {
     "name": "HStream",
-    "id": 3928195277,
+    "id": 3928195279,
     "baseUrl": "https://aniwave.se",
     "lang": "en",
     "typeSource": "multi",
@@ -13,11 +13,11 @@ const mangayomiSources = [
     "hasCloudflare": false,
     "sourceCodeUrl": "",
     "apiUrl": "",
-    "version": "1.0.8",
+    "version": "2.0.9",
     "isManga": false,
     "itemType": 1,
     "isFullData": false,
-    "appMinVerReq": "0.5.0",
+    "appMinVerReq": "0.5.1",
     "additionalParams": "",
     "sourceCodeLanguage": 1,
     "pkgPath": "anime/src/en/hstream.js",
