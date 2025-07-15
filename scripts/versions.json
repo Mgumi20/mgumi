@@ -32,6 +32,12 @@
         }
     },
     "anime": {
+        "WitAnime": {
+            "name": "WitAnime",
+            "version": "1.0.0",
+            "langs": "ar",
+            "lastUpd": 1752541654.899415
+        },
         "HStream": {
             "name": "HStream",
             "version": "1.0.0",
