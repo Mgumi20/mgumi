@@ -1,5 +1,5 @@
 const mangayomiSources = [{
-    "name": "HStream",
+    "name": "HStream0",
     "lang": "en",
     "baseUrl": "https://kisskh.ovh",
     "apiUrl": "",
@@ -7,7 +7,7 @@ const mangayomiSources = [{
     "typeSource": "single",
     "itemType": 1,
     "version": "0.1.6",
-    "pkgPath": "anime/src/en/hstream.js"
+    "pkgPath": "anime/src/en/hstream0.js"
 }];
 
 class DefaultExtension extends MProvider {
