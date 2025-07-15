@@ -10,7 +10,7 @@ const mangayomiSources = [
   {
     name: "Hstream",
     id: 883654321,
-    lang: "en",
+    lang: "all",
     baseUrl: "https://hstream.moe",
     apiUrl: "",
     iconUrl: "https://www.google.com/s2/favicons?sz=64&domain=https://hstream.moe",
