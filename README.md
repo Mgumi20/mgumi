@@ -20,8 +20,8 @@ This repository contains the available javascript extension catalogues for the M
 
 | Name | Version | Language | Last Updated |
 |------|---------|----------|---------------|
+| WitAnime | 2.0.0 | ar | 2025/07/15 23:56 IST |
 | HStream | 0.1.6 | en | 2025/07/15 23:55 IST |
-| WitAnime | 1.0.0 | ar | 2025/07/15 06:37 IST |
 | XPrime | 2.1.1 | all | 2025/07/12 22:05 IST |
 | Aniplay | 1.6.4 | en | 2025/07/04 16:09 IST |
 | Aniwatch | 1.0.0 | en | 2025/06/30 23:06 IST |
