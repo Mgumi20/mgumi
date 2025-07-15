@@ -11,7 +11,7 @@ const mangayomiSources = [{
     "hasCloudflare": true,
     "sourceCodeUrl": "",
     "apiUrl": "",
-    "version": "1.0.5",
+    "version": "1.0.6",
     "isManga": false,
     "itemType": 1,
     "isFullData": false,
@@ -40,6 +40,7 @@ class DefaultExtension extends MProvider {
         };
     }
 
+    // دالة مساعدة لتحليل قائمة الغرف من استجابة ה-API
     async _parseApiResponse(url) {
         const res = await this.client.get(url, this.getHeaders());
         const data = JSON.parse(res.body);
@@ -57,25 +58,30 @@ class DefaultExtension extends MProvider {
         };
     }
 
+    // "getPopular" سيعرض دائمًا الفئة المميزة (Featured)
     async getPopular(page) {
         const offset = page > 1 ? 90 * (page - 1) : 0;
         const url = `${this.source.baseUrl}/api/ts/roomlist/room-list/?limit=90&offset=${offset}`;
         return await this._parseApiResponse(url);
     }
 
+    // "getLatestUpdates" سيعرض أيضًا الفئة المميزة كقيمة افتراضية
     async getLatestUpdates(page) {
         const offset = page > 1 ? 90 * (page - 1) : 0;
         const url = `${this.source.baseUrl}/api/ts/roomlist/room-list/?limit=90&offset=${offset}`;
         return await this._parseApiResponse(url);
     }
 
+    // تم تحديث دالة البحث لاستخدام الفلاتر الجديدة
     async search(query, page, filters) {
         const offset = page > 1 ? 90 * (page - 1) : 0;
         let url = "";
 
         if (query) {
+            // إذا كان هناك نص بحث، استخدم البحث بالهاشتاغ
             url = `${this.source.baseUrl}/api/ts/roomlist/room-list/?hashtags=${encodeURIComponent(query)}&limit=90&offset=${offset}`;
         } else {
+            // إذا لم يكن هناك نص بحث، استخدم الفلتر المحدد
             const categoryFilter = filters[0];
             const selectedCategoryPath = categoryFilter.values[categoryFilter.state].value;
             url = `${this.source.baseUrl}${selectedCategoryPath}&offset=${offset}`;
@@ -112,7 +118,6 @@ class DefaultExtension extends MProvider {
         });
     }
 
-    // FIX: تم إصلاح الدالة بالكامل لتطابق منطق Kotlin
     async getVideoList(url) {
         const res = await this.client.get(url, this.getHeaders());
         const doc = new Document(res.body);
@@ -137,29 +142,23 @@ class DefaultExtension extends MProvider {
         
         const unescapedJson = this._unescapeUnicode(jsonString);
         
-        // استخدام نفس التعبير النمطي من Kotlin لاستخراج الجزء الأساسي من الرابط
-        const m3u8Match = unescapedJson.match(/"hls_source":\s*"(.*)\.m3u8"/);
-        const m3u8Base = m3u8Match ? m3u8Match[1] : null;
+        const m3u8Match = unescapedJson.match(/"hls_source":\s*"(.*?\.m3u8)"/);
+        const m3u8Url = m3u8Match ? m3u8Match[1] : null;
         
-        if (!m3u8Base) {
+        if (!m3u8Url) {
             throw new Error("Could not find M3U8 stream URL.");
         }
-        
-        // إعادة بناء الرابط النهائي بنفس طريقة Kotlin
-        const finalM3u8Url = m3u8Base + ".m3u8";
 
         return [{
-            url: finalM3u8Url,
-            originalUrl: finalM3u8Url,
+            url: m3u8Url,
+            originalUrl: m3u8Url,
             quality: "Live",
             isM3U8: true,
-            // استخدام ترويسة بسيطة كما هو مقترح في الشيفرة المرجعية
-            headers: {
-                "Referer": this.source.baseUrl
-            }
+            headers: this.getHeaders(url)
         }];
     }
 
+    // FIX: تم استبدال الفلاتر المعقدة بفلتر بسيط يعتمد على الفئات
     getFilterList() {
         const mainPageCategories = [
             { name: "Featured", value: "/api/ts/roomlist/room-list/?limit=90" },
@@ -178,11 +177,12 @@ class DefaultExtension extends MProvider {
         return [{
             type_name: "SelectFilter",
             name: "Category",
-            state: 0,
+            state: 0, // القيمة الافتراضية هي "Featured"
             values: filterValues
         }];
     }
     
+    // هذه الدالة أصبحت غير ضرورية الآن، ولكن يمكن إبقاؤها فارغة
     getSourcePreferences() {
         return [];
     }
