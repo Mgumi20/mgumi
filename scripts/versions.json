@@ -32,23 +32,17 @@
         }
     },
     "anime": {
+        "HStream": {
+            "name": "HStream",
+            "version": "0.1.6",
+            "langs": "en",
+            "lastUpd": 1752603955.665443
+        },
         "WitAnime": {
             "name": "WitAnime",
             "version": "1.0.0",
             "langs": "ar",
             "lastUpd": 1752541654.899415
-        },
-        "HStream": {
-            "name": "HStream",
-            "version": "1.0.0",
-            "langs": "en",
-            "lastUpd": 1752541523.164313
-        },
-        "AnimeBlkom": {
-            "name": "AnimeBlkom",
-            "version": "1.0.1",
-            "langs": "ar",
-            "lastUpd": 1752540777.019746
         },
         "XPrime": {
             "name": "XPrime",
