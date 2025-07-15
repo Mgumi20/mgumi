@@ -32,11 +32,11 @@
         }
     },
     "anime": {
-        "HStream0": {
-            "name": "HStream0",
-            "version": "0.1.6",
+        "Hstream": {
+            "name": "Hstream",
+            "version": "1.0.0",
             "langs": "en",
-            "lastUpd": 1752605273.87465
+            "lastUpd": 1752607217.12545
         },
         "WitAnime": {
             "name": "WitAnime",
