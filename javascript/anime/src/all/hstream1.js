@@ -8,7 +8,7 @@
 
 const mangayomiSources = [
   {
-    name: "Hstream",
+    name: "Hstream1",
     id: 883654321,
     lang: "all",
     baseUrl: "https://hstream.moe",
@@ -17,7 +17,7 @@ const mangayomiSources = [
     typeSource: "multi",
     itemType: 1,
     version: "1.0.0",
-    pkgPath: "anime/src/all/hstream.js",
+    pkgPath: "anime/src/all/hstream1.js",
   },
 ];
 
