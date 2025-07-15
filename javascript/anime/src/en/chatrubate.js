@@ -11,7 +11,7 @@ const mangayomiSources = [{
     "hasCloudflare": true,
     "sourceCodeUrl": "",
     "apiUrl": "",
-    "version": "1.0.0",
+    "version": "1.0.1", // تم تحديث الإصدار
     "isManga": false,
     "itemType": 1,
     "isFullData": false,
@@ -21,6 +21,7 @@ const mangayomiSources = [{
     "notes": "",
     "pkgPath": "anime/src/en/chatrubate.js"
 }];
+
 class DefaultExtension extends MProvider {
     constructor() {
         super();
@@ -40,58 +41,53 @@ class DefaultExtension extends MProvider {
     }
 
     // دالة مساعدة لتحليل قائمة الغرف من استجابة ה-API
-    _parseRoomList(rooms) {
+    async _parseApiResponse(url) {
+        const res = await this.client.get(url, this.getHeaders());
+        const data = JSON.parse(res.body);
         const list = [];
-        for (const room of rooms) {
+        for (const room of data.rooms) {
             list.push({
                 name: room.username,
                 link: `${this.source.baseUrl}/${room.username}/`,
                 imageUrl: room.img
             });
         }
-        return list;
+        return {
+            list,
+            hasNextPage: list.length > 0
+        };
     }
 
-    // تم تعيين "Featured" لهذه الدالة
+    // "getPopular" سيعرض دائمًا الفئة المميزة (Featured)
     async getPopular(page) {
         const offset = page > 1 ? 90 * (page - 1) : 0;
         const url = `${this.source.baseUrl}/api/ts/roomlist/room-list/?limit=90&offset=${offset}`;
-        const res = await this.client.get(url, this.getHeaders());
-        const data = JSON.parse(res.body);
-        const list = this._parseRoomList(data.rooms);
-        return {
-            list,
-            hasNextPage: list.length > 0
-        };
+        return await this._parseApiResponse(url);
     }
 
-    // يتم التحكم في هذه الدالة عبر التفضيلات
+    // "getLatestUpdates" سيعرض أيضًا الفئة المميزة كقيمة افتراضية
     async getLatestUpdates(page) {
-        const category = this.getPreference("chatrubate_mainpage_category") || "/api/ts/roomlist/room-list/?limit=90";
         const offset = page > 1 ? 90 * (page - 1) : 0;
-        const url = `${this.source.baseUrl}${category}&offset=${offset}`;
-        
-        const res = await this.client.get(url, this.getHeaders());
-        const data = JSON.parse(res.body);
-        const list = this._parseRoomList(data.rooms);
-        return {
-            list,
-            hasNextPage: list.length > 0
-        };
+        const url = `${this.source.baseUrl}/api/ts/roomlist/room-list/?limit=90&offset=${offset}`;
+        return await this._parseApiResponse(url);
     }
 
+    // تم تحديث دالة البحث لاستخدام الفلاتر الجديدة
     async search(query, page, filters) {
         const offset = page > 1 ? 90 * (page - 1) : 0;
-        const url = `${this.source.baseUrl}/api/ts/roomlist/room-list/?hashtags=${encodeURIComponent(query)}&limit=90&offset=${offset}`;
+        let url = "";
+
+        if (query) {
+            // إذا كان هناك نص بحث، استخدم البحث بالهاشتاغ
+            url = `${this.source.baseUrl}/api/ts/roomlist/room-list/?hashtags=${encodeURIComponent(query)}&limit=90&offset=${offset}`;
+        } else {
+            // إذا لم يكن هناك نص بحث، استخدم الفلتر المحدد
+            const categoryFilter = filters[0];
+            const selectedCategoryPath = categoryFilter.values[categoryFilter.state].value;
+            url = `${this.source.baseUrl}${selectedCategoryPath}&offset=${offset}`;
+        }
         
-        const res = await this.client.get(url, this.getHeaders());
-        const data = JSON.parse(res.body);
-        const list = this._parseRoomList(data.rooms);
-        
-        return {
-            list,
-            hasNextPage: list.length > 0
-        };
+        return await this._parseApiResponse(url);
     }
 
     async getDetail(url) {
@@ -102,7 +98,6 @@ class DefaultExtension extends MProvider {
         const imageUrl = doc.selectFirst("meta[property='og:image']")?.attr("content");
         const description = doc.selectFirst("meta[property=og:description]")?.attr("content")?.trim();
         
-        // بما أنه بث مباشر، ننشئ "فصل" واحد لتشغيل الفيديو
         const chapters = [{
             name: "Live Stream",
             url: url
@@ -117,7 +112,6 @@ class DefaultExtension extends MProvider {
         };
     }
     
-    // دالة مساعدة لفك تشفير يونيكود كما في الشيفرة المرجعية
     _unescapeUnicode(str) {
         return str.replace(/\\u([\d\w]{4})/gi, (match, grp) => {
             return String.fromCharCode(parseInt(grp, 16));
@@ -159,27 +153,37 @@ class DefaultExtension extends MProvider {
             url: m3u8Url,
             originalUrl: m3u8Url,
             quality: "Live",
-            isM3U8: true, // مهم لمشغلات الفيديو
+            isM3U8: true,
             headers: this.getHeaders(url)
         }];
     }
 
-    getSourcePreferences() {
+    // FIX: تم استبدال الفلاتر المعقدة بفلتر بسيط يعتمد على الفئات
+    getFilterList() {
+        const mainPageCategories = [
+            { name: "Featured", value: "/api/ts/roomlist/room-list/?limit=90" },
+            { name: "Male", value: "/api/ts/roomlist/room-list/?genders=m&limit=90" },
+            { name: "Female", value: "/api/ts/roomlist/room-list/?genders=f&limit=90" },
+            { name: "Couples", value: "/api/ts/roomlist/room-list/?genders=c&limit=90" },
+            { name: "Trans", value: "/api/ts/roomlist/room-list/?genders=t&limit=90" },
+        ];
+
+        const filterValues = mainPageCategories.map(cat => ({
+            type_name: "SelectOption",
+            name: cat.name,
+            value: cat.value
+        }));
+
         return [{
-            key: "chatrubate_mainpage_category",
-            listPreference: {
-                title: "Main Page Category",
-                summary: "Select the category to show on the main page",
-                valueIndex: 0,
-                entries: ["Featured", "Male", "Female", "Couples", "Trans"],
-                entryValues: [
-                    "/api/ts/roomlist/room-list/?limit=90",
-                    "/api/ts/roomlist/room-list/?genders=m&limit=90",
-                    "/api/ts/roomlist/room-list/?genders=f&limit=90",
-                    "/api/ts/roomlist/room-list/?genders=c&limit=90",
-                    "/api/ts/roomlist/room-list/?genders=t&limit=90",
-                ],
-            },
+            type_name: "SelectFilter",
+            name: "Category",
+            state: 0, // القيمة الافتراضية هي "Featured"
+            values: filterValues
         }];
+    }
+    
+    // هذه الدالة أصبحت غير ضرورية الآن، ولكن يمكن إبقاؤها فارغة
+    getSourcePreferences() {
+        return [];
     }
 }
