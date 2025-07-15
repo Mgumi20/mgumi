@@ -11,7 +11,7 @@ const mangayomiSources = [{
     "hasCloudflare": true,
     "sourceCodeUrl": "",
     "apiUrl": "",
-    "version": "1.0.3",
+    "version": "1.0.4",
     "isManga": false,
     "itemType": 1,
     "isFullData": false,
@@ -40,7 +40,6 @@ class DefaultExtension extends MProvider {
         };
     }
 
-    // دالة مساعدة لتحليل قائمة الغرف من استجابة ה-API
     async _parseApiResponse(url) {
         const res = await this.client.get(url, this.getHeaders());
         const data = JSON.parse(res.body);
@@ -58,30 +57,25 @@ class DefaultExtension extends MProvider {
         };
     }
 
-    // "getPopular" سيعرض دائمًا الفئة المميزة (Featured)
     async getPopular(page) {
         const offset = page > 1 ? 90 * (page - 1) : 0;
         const url = `${this.source.baseUrl}/api/ts/roomlist/room-list/?limit=90&offset=${offset}`;
         return await this._parseApiResponse(url);
     }
 
-    // "getLatestUpdates" سيعرض أيضًا الفئة المميزة كقيمة افتراضية
     async getLatestUpdates(page) {
         const offset = page > 1 ? 90 * (page - 1) : 0;
         const url = `${this.source.baseUrl}/api/ts/roomlist/room-list/?limit=90&offset=${offset}`;
         return await this._parseApiResponse(url);
     }
 
-    // تم تحديث دالة البحث لاستخدام الفلاتر الجديدة
     async search(query, page, filters) {
         const offset = page > 1 ? 90 * (page - 1) : 0;
         let url = "";
 
         if (query) {
-            // إذا كان هناك نص بحث، استخدم البحث بالهاشتاغ
             url = `${this.source.baseUrl}/api/ts/roomlist/room-list/?hashtags=${encodeURIComponent(query)}&limit=90&offset=${offset}`;
         } else {
-            // إذا لم يكن هناك نص بحث، استخدم الفلتر المحدد
             const categoryFilter = filters[0];
             const selectedCategoryPath = categoryFilter.values[categoryFilter.state].value;
             url = `${this.source.baseUrl}${selectedCategoryPath}&offset=${offset}`;
@@ -118,6 +112,7 @@ class DefaultExtension extends MProvider {
         });
     }
 
+    // FIX: تم إصلاح الدالة للتعامل مع عناصر السكربت الفارغة
     async getVideoList(url) {
         const res = await this.client.get(url, this.getHeaders());
         const doc = new Document(res.body);
@@ -125,7 +120,8 @@ class DefaultExtension extends MProvider {
         const scripts = doc.select("script");
         let targetScript = null;
         for (const script of scripts) {
-            if (script.data.includes("window.initialRoomDossier")) {
+            // إضافة تحقق للتأكد من أن `script.data` ليس فارغاً
+            if (script.data && script.data.includes("window.initialRoomDossier")) {
                 targetScript = script.data;
                 break;
             }
@@ -158,7 +154,6 @@ class DefaultExtension extends MProvider {
         }];
     }
 
-    // FIX: تم استبدال الفلاتر المعقدة بفلتر بسيط يعتمد على الفئات
     getFilterList() {
         const mainPageCategories = [
             { name: "Featured", value: "/api/ts/roomlist/room-list/?limit=90" },
@@ -177,13 +172,12 @@ class DefaultExtension extends MProvider {
         return [{
             type_name: "SelectFilter",
             name: "Category",
-            state: 0, // القيمة الافتراضية هي "Featured"
+            state: 0,
             values: filterValues
         }];
     }
     
-    // هذه الدالة أصبحت غير ضرورية الآن، ولكن يمكن إبقاؤها فارغة
     getSourcePreferences() {
         return [];
     }
-}
+}```
