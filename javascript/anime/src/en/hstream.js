@@ -11,7 +11,7 @@ const mangayomiSources = [{
     "hasCloudflare": true,
     "sourceCodeUrl": "",
     "apiUrl": "",
-    "version": "1.0.7",
+    "version": "1.0.8", // تم تحديث الإصدار
     "isManga": false,
     "itemType": 1,
     "isFullData": false,
@@ -39,20 +39,16 @@ class DefaultExtension extends MProvider {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36",
         };
     }
-
     
-    // Helper function to parse video lists from browse and search pages
     _parseVideoList(doc) {
         const list = [];
         const items = doc.select("div.items-center div.w-full > a");
 
         for (const item of items) {
             const name = item.selectFirst("img")?.attr("alt") || "No Title";
-            // FIX: Use getHref directly as it already returns the full URL
             const link = item.getHref;
             const imageUrl = this.source.baseUrl + item.selectFirst("img")?.getSrc;
 
-            // Ensure we only add valid video links
             if (link.includes("/hentai/")) {
                 list.push({
                     name,
@@ -71,7 +67,7 @@ class DefaultExtension extends MProvider {
         const list = this._parseVideoList(doc);
         return {
             list,
-            hasNextPage: list.length > 0 // If there are results, assume there might be a next page
+            hasNextPage: list.length > 0
         };
     }
 
@@ -87,7 +83,6 @@ class DefaultExtension extends MProvider {
     }
 
     async search(query, page, filters) {
-        // The source's search pagination is unreliable, so we limit it to the first page.
         if (page > 1) {
             return {
                 list: [],
@@ -100,20 +95,18 @@ class DefaultExtension extends MProvider {
         const list = this._parseVideoList(doc);
         return {
             list,
-            hasNextPage: false // No reliable way to check for more pages
+            hasNextPage: false
         };
     }
+    
     async getDetail(url) {
         const res = await this.client.get(url, this.getHeaders());
         const doc = new Document(res.body);
 
-        // استخدام محددات أكثر دقة بناءً على مثال Kotlin
         const infoContainer = doc.selectFirst("div.relative > div.justify-between > div");
-
         const name = infoContainer.selectFirst("div > h1")?.text?.trim() || "No Title";
-        const author = infoContainer.selectFirst("div > a:nth-of-type(3)")?.text?.trim(); // جلب اسم الفنان
+        const author = infoContainer.selectFirst("div > a:nth-of-type(3)")?.text?.trim();
 
-        // استخدام المحدد الصحيح للصورة والتأكد من أن الرابط كامل
         let imageUrl = doc.selectFirst("div.float-left > img.object-cover")?.getSrc;
         if (imageUrl && !imageUrl.startsWith("http")) {
             imageUrl = this.source.baseUrl + imageUrl;
@@ -121,11 +114,8 @@ class DefaultExtension extends MProvider {
 
         const description = doc.selectFirst("div.relative > p.leading-tight")?.text;
         const genres = doc.select("ul.list-none > li > a").map(it => it.text);
-
-        // تحديد الحالة بشكل ثابت كما في مثال Kotlin
         const status = 1; // 1 = Completed
 
-        // هذا المصدر يعرض فيديو واحد، لذلك ننشئ "فصل" واحد لتشغيله
         const chapters = [{
             name: "Watch",
             url: url
@@ -133,11 +123,11 @@ class DefaultExtension extends MProvider {
 
         return {
             name,
-            author,      // تمت إضافة الفنان
-            imageUrl,    // تم تحديث محدد الصورة
-            description, // تم تحديث محدد الوصف
+            author,
+            imageUrl,
+            description,
             genre: genres,
-            status,      // تمت إضافة الحالة
+            status,
             chapters,
             link: url
         };
@@ -151,24 +141,22 @@ class DefaultExtension extends MProvider {
     }
 
     async getVideoList(url) {
-        // Step 1: Get the initial page to extract cookies and the XSRF token
         const initialRes = await this.client.get(url, this.getHeaders());
         const doc = new Document(initialRes.body);
 
         const setCookieHeader = initialRes.headers['Set-Cookie'] || '';
         const tokenCookie = setCookieHeader.split(';').find(c => c.trim().startsWith('XSRF-TOKEN='));
-        const token = tokenCookie ? decodeURIComponent(tokenCookie.split('=')[1]) : '';
-
-        if (!token) {
-            throw new Error("Could not extract XSRF-TOKEN.");
+        
+        if (!tokenCookie) {
+             throw new Error("Could not find XSRF-TOKEN cookie.");
         }
+        const token = decodeURIComponent(tokenCookie.split('=')[1]);
 
         const episodeId = doc.selectFirst("input#e_id")?.attr("value");
         if (!episodeId) {
             throw new Error("Could not find episode ID on the page.");
         }
 
-        // Step 2: Make the API POST request to get player data
         const apiHeaders = {
             ...this.getHeaders(url),
             "X-Requested-With": "XMLHttpRequest",
@@ -187,16 +175,19 @@ class DefaultExtension extends MProvider {
             throw new Error("Failed to fetch player data from the API.");
         }
 
-        // Step 3: Construct stream and subtitle URLs
         const streams = [];
-        const streamBaseUrl = `${playerData.stream_domains[0]}/${playerData.stream_url}`;
+        const randomDomain = playerData.stream_domains[Math.floor(Math.random() * playerData.stream_domains.length)];
+        const streamBaseUrl = `${randomDomain}/${playerData.stream_url}`;
         
         const resolutions = ["720", "1080"];
         if (playerData.resolution === "4k") {
             resolutions.push("2160");
         }
         
-        const prefQuality = this.getPreference("pref_quality_key") || "1080";
+        const subtitles = [{
+            file: `${streamBaseUrl}/eng.ass`,
+            label: "English"
+        }];
 
         for (const res of resolutions) {
             const videoUrl = streamBaseUrl + this._getVideoUrlPath(playerData.legacy !== 0, res);
@@ -205,22 +196,15 @@ class DefaultExtension extends MProvider {
                 originalUrl: videoUrl,
                 quality: `${res}p`,
                 headers: this.getHeaders(this.source.baseUrl),
+                subtitles: subtitles,
             });
         }
         
-        // Add subtitles to the first stream object
-        if (streams.length > 0) {
-            streams[0].subtitles = [{
-                file: `${streamBaseUrl}/eng.ass`,
-                label: "English"
-            }];
-        }
-        
-        // Sort streams by preferred quality
+        const prefQuality = this.getPreference("pref_quality_key") || "1080";
         const sortedStreams = streams.sort((a, b) => {
             if (a.quality.includes(prefQuality)) return -1;
             if (b.quality.includes(prefQuality)) return 1;
-            return 0;
+            return parseInt(b.quality) - parseInt(a.quality);
         });
 
         return sortedStreams;
