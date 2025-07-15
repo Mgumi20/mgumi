@@ -11,7 +11,7 @@ const mangayomiSources = [{
     "hasCloudflare": true,
     "sourceCodeUrl": "",
     "apiUrl": "",
-    "version": "1.0.9", // تم تحديث الإصدار وإزالة التعليق
+    "version": "1.1.0", // تم تحديث الإصدار وإزالة التعليق
     "isManga": false,
     "itemType": 1,
     "isFullData": false,
