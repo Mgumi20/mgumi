@@ -1,0 +1,52 @@
+name: Generate json index & ReadMe
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "javascript/**"
+  workflow_dispatch: # Allows manual triggering
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Set timezone
+        uses: szenius/set-timezone@v2.0
+        with:
+          timezoneLinux: "Asia/Kolkata"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-vercode: "3.x"
+
+      - name: Install modules
+        run: |
+          pip install -r requirements.txt
+
+      - name: Update extensions
+        run: |
+          python scripts/generator_source.py
+
+      - name: Update ReadMe
+        run: |
+          python scripts/generator_readme.py
+
+      - name: Commit and Push Changes
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git checkout main
+          git add .
+          if git diff --cached --quiet; then
+            echo "No changes detected, skipping commit."
+          else
+            git commit -m "🤖: Update extensions"
+            git push origin main --force
+          fi
