@@ -11,7 +11,7 @@ const mangayomiSources = [{
     "hasCloudflare": true,
     "sourceCodeUrl": "",
     "apiUrl": "",
-    "version": "1.1.1",
+    "version": "1.1.2",
     "isManga": false,
     "itemType": 1,
     "isFullData": false,
@@ -80,7 +80,8 @@ class DefaultExtension extends MProvider {
         const list = this._parseVideoList(doc);
         return { list, hasNextPage: false };
     }
-
+    
+    // FIX: تم تحديث الدالة لتطابق منطق Kotlin episodeListParse
     async getDetail(url) {
         const res = await this.client.get(url, this.getHeaders());
         const doc = new Document(res.body);
@@ -98,7 +99,19 @@ class DefaultExtension extends MProvider {
         const genres = doc.select("ul.list-none > li > a").map((it) => it.text);
         const status = 1;
 
-        const chapters = [{ name: "Watch", url }];
+        // منطق إنشاء "الفصل" بناءً على مثال Kotlin
+        const dateUploadStr = doc.selectFirst("a:has(i.fa-upload)")?.text?.trim();
+        const dateUpload = dateUploadStr ? new Date(dateUploadStr).getTime().toString() : Date.now().toString();
+
+        const numMatch = url.match(/-(\d+)\/?$/);
+        const num = numMatch ? numMatch[1] : "1";
+        const episodeName = `Episode ${num}`;
+
+        const chapters = [{
+            name: episodeName,
+            url: url,
+            dateUpload: dateUpload
+        }];
 
         return { name, author, imageUrl, description, genre: genres, status, chapters, link: url };
     }
@@ -108,40 +121,34 @@ class DefaultExtension extends MProvider {
         const res = await this.client.get(url, this.getHeaders());
         const doc = new Document(res.body);
 
-        // البحث عن رابط الترجمة لاستنتاج رابط الفيديو الأساسي
         const subtitleLinkElement = doc.selectFirst("a[href$=.ass]");
         if (!subtitleLinkElement) {
             throw new Error("Could not find the subtitle download link. The page structure may have changed.");
         }
 
         const subtitleUrl = subtitleLinkElement.getHref;
-
-        // استنتاج الرابط الأساسي للفيديو من رابط الترجمة
-        //  e.g., "https://.../E02/eng.ass" -> "https://.../E02/"
         const streamBaseUrl = subtitleUrl.substring(0, subtitleUrl.lastIndexOf('/') + 1);
 
         const streams = [];
-        const resolutions = ["720", "1080"]; // يمكن إضافة "2160" إذا كانت متوفرة
+        // FIX: تم إضافة جودة 2160p
+        const resolutions = ["720", "1080", "2160"];
 
-        // إنشاء كائن الترجمة
         const subtitles = [{
             file: subtitleUrl,
             label: "English",
         }];
 
-        // بناء روابط الفيديو لجميع الجودات
         for (const res of resolutions) {
             const videoUrl = `${streamBaseUrl}${res}/manifest.mpd`;
             streams.push({
                 url: videoUrl,
                 originalUrl: videoUrl,
                 quality: `${res}p`,
-                headers: this.getHeaders(url), // Referer مهم هنا
+                headers: this.getHeaders(url),
                 subtitles: subtitles,
             });
         }
         
-        // فرز الروابط بناءً على تفضيل المستخدم
         const prefQuality = this.getPreference("pref_quality_key") || "1080";
         const sortedStreams = streams.sort((a, b) => {
             if (a.quality.includes(prefQuality)) return -1;
