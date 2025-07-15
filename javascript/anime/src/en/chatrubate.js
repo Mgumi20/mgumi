@@ -11,7 +11,7 @@ const mangayomiSources = [{
     "hasCloudflare": true,
     "sourceCodeUrl": "",
     "apiUrl": "",
-    "version": "1.0.1", // تم تحديث الإصدار
+    "version": "1.0.2",
     "isManga": false,
     "itemType": 1,
     "isFullData": false,
@@ -19,7 +19,7 @@ const mangayomiSources = [{
     "additionalParams": "",
     "sourceCodeLanguage": 1,
     "notes": "",
-    "pkgPath": "anime/src/en/chatrubate.js"
+    "pkgPath": "anime/src/en/hstream.js"
 }];
 
 class DefaultExtension extends MProvider {
