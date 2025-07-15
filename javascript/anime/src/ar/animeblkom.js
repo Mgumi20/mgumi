@@ -3,11 +3,23 @@ const mangayomiSources = [{
     "id": 294348492,
     "lang": "ar",
     "baseUrl": "https://animeblkom.net",
-    "apiUrl": "",
-    "iconUrl": "https://www.google.com/s2/favicons?sz=128&domain=https://animeblkom.net",
     "typeSource": "multi",
+    "iconUrl":
+    "iconUrl": "https://www.google.com/s2/favicons?sz=128&domain=https://animeblkom.net",
+    "dateFormat": "",
+    "dateFormatLocale": "",
+    "isNsfw": false,
+    "hasCloudflare": false,
+    "sourceCodeUrl": "",
+    "apiUrl": "",
+    "version": "0.0.7",
+    "isManga": false,
     "itemType": 1,
-    "version": "1.0.1",
+    "isFullData": false,
+    "appMinVerReq": "0.5.0",
+    "additionalParams": "",
+    "sourceCodeLanguage": 1,
+    "notes": "",
     "pkgPath": "anime/src/ar/animeblkom.js"
 }];
 
