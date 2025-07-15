@@ -11,7 +11,7 @@ const mangayomiSources = [{
     "hasCloudflare": true,
     "sourceCodeUrl": "",
     "apiUrl": "",
-    "version": "1.0.4",
+    "version": "1.0.5",
     "isManga": false,
     "itemType": 1,
     "isFullData": false,
@@ -103,17 +103,29 @@ class DefaultExtension extends MProvider {
             hasNextPage: false // No reliable way to check for more pages
         };
     }
-
     async getDetail(url) {
         const res = await this.client.get(url, this.getHeaders());
         const doc = new Document(res.body);
 
-        const name = doc.selectFirst("div.relative h1")?.text?.trim() || "No Title";
-        const imageUrl = doc.selectFirst("meta[property=og:image]")?.attr("content");
-        const description = doc.selectFirst("meta[property=og:description]")?.attr("content");
-        const genres = doc.select("ul.list-none.text-center li a").map(it => it.text);
+        // استخدام محددات أكثر دقة بناءً على مثال Kotlin
+        const infoContainer = doc.selectFirst("div.relative > div.justify-between > div");
 
-        // Since this source is for single videos, we create one "chapter" to trigger the video player
+        const name = infoContainer.selectFirst("div > h1")?.text?.trim() || "No Title";
+        const author = infoContainer.selectFirst("div > a:nth-of-type(3)")?.text?.trim(); // جلب اسم الفنان
+
+        // استخدام المحدد الصحيح للصورة والتأكد من أن الرابط كامل
+        let imageUrl = doc.selectFirst("div.float-left > img.object-cover")?.getSrc;
+        if (imageUrl && !imageUrl.startsWith("http")) {
+            imageUrl = this.source.baseUrl + imageUrl;
+        }
+
+        const description = doc.selectFirst("div.relative > p.leading-tight")?.text;
+        const genres = doc.select("ul.list-none > li > a").map(it => it.text);
+
+        // تحديد الحالة بشكل ثابت كما في مثال Kotlin
+        const status = 1; // 1 = Completed
+
+        // هذا المصدر يعرض فيديو واحد، لذلك ننشئ "فصل" واحد لتشغيله
         const chapters = [{
             name: "Watch",
             url: url
@@ -121,9 +133,11 @@ class DefaultExtension extends MProvider {
 
         return {
             name,
-            imageUrl,
-            description,
+            author,      // تمت إضافة الفنان
+            imageUrl,    // تم تحديث محدد الصورة
+            description, // تم تحديث محدد الوصف
             genre: genres,
+            status,      // تمت إضافة الحالة
             chapters,
             link: url
         };
