@@ -1,16 +1,26 @@
 const mangayomiSources = [{
     "name": "Chatrubate",
-    "id": 192837465, // رقم فريد
+    "id": 192837465,
     "baseUrl": "https://chaturbate.com",
     "lang": "en",
-    "typeSource": "multi",
+    "typeSource": "single",
     "iconUrl": "https://www.google.com/s2/favicons?sz=256&domain=chaturbate.com",
+    "dateFormat": "",
+    "dateFormatLocale": "",
     "isNsfw": true,
-    "itemType": 1, // نوع البث المباشر
+    "hasCloudflare": true,
+    "sourceCodeUrl": "",
+    "apiUrl": "",
     "version": "1.0.0",
-    "pkgPath": "anime/src/en/chatrubate.js",
+    "isManga": false,
+    "itemType": 1,
+    "isFullData": false,
+    "appMinVerReq": "0.5.0",
+    "additionalParams": "",
+    "sourceCodeLanguage": 1,
+    "notes": "",
+    "pkgPath": "anime/src/en/hstream.js"
 }];
-
 class DefaultExtension extends MProvider {
     constructor() {
         super();
