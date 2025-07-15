@@ -1,0 +1,158 @@
+{
+    "manga": {
+        "ReadComicOnline": {
+            "name": "ReadComicOnline",
+            "version": "0.2.8",
+            "langs": "en",
+            "lastUpd": 1751006373.786841
+        },
+        "WeLoMa": {
+            "name": "WeLoMa",
+            "version": "0.0.8",
+            "langs": "ja",
+            "lastUpd": 1749313966.44208
+        },
+        "Mangapark": {
+            "name": "Mangapark",
+            "version": "1.0.0",
+            "langs": "en",
+            "lastUpd": 1749049993.036179
+        },
+        "Mangapill": {
+            "name": "Mangapill",
+            "version": "1.0.3",
+            "langs": "en",
+            "lastUpd": 1747738043.896285
+        },
+        "Weeb Central": {
+            "name": "Weeb Central",
+            "version": "0.1.0",
+            "langs": "en",
+            "lastUpd": 1741990440
+        }
+    },
+    "anime": {
+        "XPrime": {
+            "name": "XPrime",
+            "version": "2.1.1",
+            "langs": "all",
+            "lastUpd": 1752338104.780231
+        },
+        "Aniplay": {
+            "name": "Aniplay",
+            "version": "1.6.4",
+            "langs": "en",
+            "lastUpd": 1751625568.474225
+        },
+        "Aniwatch": {
+            "name": "Aniwatch",
+            "version": "1.0.0",
+            "langs": "en",
+            "lastUpd": 1751305007.371692
+        },
+        "Tamilarasan": {
+            "name": "Tamilarasan",
+            "version": "0.0.6",
+            "langs": "all",
+            "lastUpd": 1751216173.527032
+        },
+        "Anicrush": {
+            "name": "Anicrush",
+            "version": "0.0.5",
+            "langs": "en",
+            "lastUpd": 1751042518.408327
+        },
+        "AnimeParadise": {
+            "name": "AnimeParadise",
+            "version": "0.1.0",
+            "langs": "en",
+            "lastUpd": 1750509383.278437
+        },
+        "AnimeZZ": {
+            "name": "AnimeZZ",
+            "version": "1.1.1",
+            "langs": "en",
+            "lastUpd": 1750504671.044623
+        },
+        "AnimeKai": {
+            "name": "AnimeKai",
+            "version": "0.3.3",
+            "langs": "en",
+            "lastUpd": 1749881588.032278
+        },
+        "Dramacool": {
+            "name": "Dramacool",
+            "version": "1.1.0",
+            "langs": "all",
+            "lastUpd": 1749795088.253707
+        },
+        "Streamblasters": {
+            "name": "Streamblasters",
+            "version": "1.0.0",
+            "langs": "all",
+            "lastUpd": 1748666820.889896
+        },
+        "Autoembed": {
+            "name": "Autoembed",
+            "version": "1.3.3",
+            "langs": "all",
+            "lastUpd": 1748094760.694626
+        },
+        "KickAssAnime": {
+            "name": "KickAssAnime",
+            "version": "0.0.7",
+            "langs": "en",
+            "lastUpd": 1747987051.04447
+        },
+        "Sudatchi": {
+            "name": "Sudatchi",
+            "version": "1.1.1",
+            "langs": "en",
+            "lastUpd": 1747738043.896285
+        },
+        "Animeonsen": {
+            "name": "Animeonsen",
+            "version": "1.0.1",
+            "langs": "en, ja",
+            "lastUpd": 1747738043.896285
+        },
+        "AnimeGG": {
+            "name": "AnimeGG",
+            "version": "1.0.3",
+            "langs": "en",
+            "lastUpd": 1747738043.896285
+        },
+        "Gojo": {
+            "name": "Gojo",
+            "version": "0.0.6",
+            "langs": "en",
+            "lastUpd": 1747738043.896285
+        },
+        "Soaper": {
+            "name": "Soaper",
+            "version": "1.0.5",
+            "langs": "all",
+            "lastUpd": 1747738043.896285
+        },
+        "Aniwave": {
+            "name": "Aniwave",
+            "version": "0.0.7",
+            "langs": "en",
+            "lastUpd": 1746729660
+        },
+        "KissKH": {
+            "name": "KissKH",
+            "version": "0.1.6",
+            "langs": "all",
+            "lastUpd": 1746206220
+        }
+    },
+    "novel": {
+        "Novelbuddy": {
+            "name": "Novelbuddy",
+            "version": "0.0.9",
+            "langs": "en",
+            "lastUpd": 1749491688.879926
+        }
+    }
+}
