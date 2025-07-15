@@ -34,9 +34,9 @@
     "anime": {
         "WitAnime": {
             "name": "WitAnime",
-            "version": "2.0.0",
+            "version": "2.0.1",
             "langs": "ar",
-            "lastUpd": 1752603982.16573
+            "lastUpd": 1752604516.846719
         },
         "HStream": {
             "name": "HStream",
