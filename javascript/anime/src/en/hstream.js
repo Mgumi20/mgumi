@@ -1,28 +1,26 @@
-const mangayomiSources = [
-  {
-    name: "Hstream",
-    id: 987654321,
-    baseUrl: "https://hstream.moe",
-    lang: "en",
-    typeSource: "single",
-    iconUrl: "https://www.google.com/s2/favicons?sz=256&domain=https://hstream.moe",
-    dateFormat: "",
-    dateFormatLocale: "",
-    isNsfw: true,
-    hasCloudflare: true,
-    sourceCodeUrl: "",
-    apiUrl: "",
-    version: "1.0.12",
-    isManga: false,
-    itemType: 1,
-    isFullData: false,
-    appMinVerReq: "0.5.0",
-    additionalParams: "",
-    sourceCodeLanguage: 1,
-    notes: "",
-    pkgPath: "anime/src/en/hstream.js"
-  },
-];
+const mangayomiSources = [{
+    "name": "Hstream",
+    "id": 987654321,
+    "baseUrl": "https://hstream.moe",
+    "lang": "en",
+    "typeSource": "single",
+    "iconUrl": "https://www.google.com/s2/favicons?sz=256&domain=https://hstream.moe",
+    "dateFormat": "",
+    "dateFormatLocale": "",
+    "isNsfw": true,
+    "hasCloudflare": true,
+    "sourceCodeUrl": "",
+    "apiUrl": "",
+    "version": "1.0.12",
+    "isManga": false,
+    "itemType": 1,
+    "isFullData": false,
+    "appMinVerReq": "0.5.0",
+    "additionalParams": "",
+    "sourceCodeLanguage": 1,
+    "notes": "",
+    "pkgPath": "anime/src/en/hstream.js"
+}];
 
 class DefaultExtension extends MProvider {
   constructor() {
