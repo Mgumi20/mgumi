@@ -4,7 +4,7 @@ const mangayomiSources = [{
     "lang": "ar",
     "baseUrl": "https://animeblkom.net",
     "apiUrl": "",
-    "iconUrl": "https://www.google.com/s2/favicons?sz=128&domain=https://animeblkom.net/",
+    "iconUrl": "https://www.google.com/s2/favicons?sz=128&domain=https://animeblkom.net",
     "typeSource": "multi",
     "itemType": 1,
     "version": "1.0.0",
