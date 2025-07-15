@@ -11,7 +11,7 @@ const mangayomiSources = [{
     "hasCloudflare": true,
     "sourceCodeUrl": "",
     "apiUrl": "",
-    "version": "1.0.8",
+    "version": "1.0.9",
     "isManga": false,
     "itemType": 1,
     "isFullData": false,
@@ -143,7 +143,12 @@ class DefaultExtension extends MProvider {
         const initialRes = await this.client.get(url, this.getHeaders());
         const doc = new Document(initialRes.body);
 
-        const setCookieHeader = initialRes.headers['Set-Cookie'] || '';
+        // FIX: Handle the case where 'Set-Cookie' might be an array
+        let setCookieHeader = initialRes.headers['Set-Cookie'] || '';
+        if (Array.isArray(setCookieHeader)) {
+            setCookieHeader = setCookieHeader.join('; ');
+        }
+        
         const tokenCookie = setCookieHeader.split(';').find(c => c.trim().startsWith('XSRF-TOKEN='));
         
         if (!tokenCookie) {
