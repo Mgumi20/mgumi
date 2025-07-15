@@ -11,7 +11,7 @@ const mangayomiSources = [{
     "hasCloudflare": true,
     "sourceCodeUrl": "",
     "apiUrl": "",
-    "version": "1.0.5",
+    "version": "1.0.6",
     "isManga": false,
     "itemType": 1,
     "isFullData": false,
@@ -144,6 +144,7 @@ class DefaultExtension extends MProvider {
     }
 
     _getVideoUrlPath(isLegacy, resolution) {
+        // هذه الدالة تطابق تماماً مثال Kotlin
         if (isLegacy) {
             return (resolution === "720") ? "/x264.720p.mp4" : `/av1.${resolution}.webm`;
         }
@@ -151,29 +152,30 @@ class DefaultExtension extends MProvider {
     }
 
     async getVideoList(url) {
-        // Step 1: Get the initial page to extract cookies and the XSRF token
+        // الخطوة 1: الحصول على الصفحة الأولية لاستخراج الكوكيز والتوكن
         const initialRes = await this.client.get(url, this.getHeaders());
         const doc = new Document(initialRes.body);
 
         const setCookieHeader = initialRes.headers['Set-Cookie'] || '';
         const tokenCookie = setCookieHeader.split(';').find(c => c.trim().startsWith('XSRF-TOKEN='));
-        const token = tokenCookie ? decodeURIComponent(tokenCookie.split('=')[1]) : '';
-
-        if (!token) {
-            throw new Error("Could not extract XSRF-TOKEN.");
+        
+        if (!tokenCookie) {
+             throw new Error("Could not find XSRF-TOKEN cookie.");
         }
+        // فك تشفير التوكن بشكل صحيح
+        const token = decodeURIComponent(tokenCookie.split('=')[1]);
 
         const episodeId = doc.selectFirst("input#e_id")?.attr("value");
         if (!episodeId) {
             throw new Error("Could not find episode ID on the page.");
         }
 
-        // Step 2: Make the API POST request to get player data
+        // الخطوة 2: عمل طلب POST للـ API للحصول على بيانات المشغل
         const apiHeaders = {
             ...this.getHeaders(url),
             "X-Requested-With": "XMLHttpRequest",
             "X-XSRF-TOKEN": token,
-            "Cookie": setCookieHeader,
+            "Cookie": setCookieHeader, // إرسال جميع الكوكيز التي تم استلامها
             "Content-Type": "application/json"
         };
         const apiBody = {
@@ -187,16 +189,22 @@ class DefaultExtension extends MProvider {
             throw new Error("Failed to fetch player data from the API.");
         }
 
-        // Step 3: Construct stream and subtitle URLs
+        // الخطوة 3: بناء روابط الفيديو والترجمة
         const streams = [];
-        const streamBaseUrl = `${playerData.stream_domains[0]}/${playerData.stream_url}`;
+        // اختيار نطاق عشوائي كما في مثال Kotlin لزيادة الموثوقية
+        const randomDomain = playerData.stream_domains[Math.floor(Math.random() * playerData.stream_domains.length)];
+        const streamBaseUrl = `${randomDomain}/${playerData.stream_url}`;
         
         const resolutions = ["720", "1080"];
         if (playerData.resolution === "4k") {
             resolutions.push("2160");
         }
         
-        const prefQuality = this.getPreference("pref_quality_key") || "1080";
+        // إنشاء قائمة الترجمة مرة واحدة
+        const subtitles = [{
+            file: `${streamBaseUrl}/eng.ass`,
+            label: "English"
+        }];
 
         for (const res of resolutions) {
             const videoUrl = streamBaseUrl + this._getVideoUrlPath(playerData.legacy !== 0, res);
@@ -205,16 +213,21 @@ class DefaultExtension extends MProvider {
                 originalUrl: videoUrl,
                 quality: `${res}p`,
                 headers: this.getHeaders(this.source.baseUrl),
+                subtitles: subtitles, // إرفاق نفس قائمة الترجمة لكل جودة
             });
         }
         
-        // Add subtitles to the first stream object
-        if (streams.length > 0) {
-            streams[0].subtitles = [{
-                file: `${streamBaseUrl}/eng.ass`,
-                label: "English"
-            }];
-        }
+        // فرز الفيديوهات حسب تفضيل المستخدم (إذا كان موجوداً)
+        const prefQuality = this.getPreference("pref_quality_key") || "1080";
+        const sortedStreams = streams.sort((a, b) => {
+            if (a.quality.includes(prefQuality)) return -1;
+            if (b.quality.includes(prefQuality)) return 1;
+            // فرز تنازلي للجودة كخيار احتياطي
+            return parseInt(b.quality) - parseInt(a.quality);
+        });
+
+        return sortedStreams;
+    }
         
         // Sort streams by preferred quality
         const sortedStreams = streams.sort((a, b) => {
