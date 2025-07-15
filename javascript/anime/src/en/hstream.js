@@ -1,16 +1,15 @@
 const mangayomiSources = [
   {
-    name: "Hstream",
-    id: 987654321,
-    lang: "en",
-    baseUrl: "https://hstream.moe",
-    apiUrl: "",
-    iconUrl:
-      "https://www.google.com/s2/favicons?sz=128&domain=https://hstream.moe",
-    typeSource: "single",
-    itemType: 1,
-    version: "1.0.0",
-    pkgPath: "anime/src/en/hstream.js",
+    "name": "Hstream",
+    "id": 987654321,
+    "lang": "en",
+    "baseUrl": "https://hstream.moe",
+    "apiUrl": "",
+    "iconUrl": "https://www.google.com/s2/favicons?sz=128&domain=https://hstream.moe",
+    "typeSource": "single",
+    "itemType": 1,
+    "version": "1.0.0",
+    "pkgPath": "anime/src/en/hstream.js"
   },
 ];
 
