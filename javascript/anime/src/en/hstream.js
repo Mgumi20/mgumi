@@ -11,7 +11,7 @@ const mangayomiSources = [{
     "hasCloudflare": true,
     "sourceCodeUrl": "",
     "apiUrl": "",
-    "version": "1.0.3",
+    "version": "1.0.4",
     "isManga": false,
     "itemType": 1,
     "isFullData": false,
@@ -40,6 +40,7 @@ class DefaultExtension extends MProvider {
         };
     }
 
+    
     // Helper function to parse video lists from browse and search pages
     _parseVideoList(doc) {
         const list = [];
@@ -47,7 +48,8 @@ class DefaultExtension extends MProvider {
 
         for (const item of items) {
             const name = item.selectFirst("img")?.attr("alt") || "No Title";
-            const link = this.source.baseUrl + item.getHref;
+            // FIX: Use getHref directly as it already returns the full URL
+            const link = item.getHref;
             const imageUrl = this.source.baseUrl + item.selectFirst("img")?.getSrc;
 
             // Ensure we only add valid video links
