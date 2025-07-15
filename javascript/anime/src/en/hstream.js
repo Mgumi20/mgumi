@@ -11,7 +11,7 @@ const mangayomiSources = [{
     "hasCloudflare": true,
     "sourceCodeUrl": "",
     "apiUrl": "",
-    "version": "1.0.11",
+    "version": "1.1.1", // تم تحديث الإصدار
     "isManga": false,
     "itemType": 1,
     "isFullData": false,
@@ -21,6 +21,7 @@ const mangayomiSources = [{
     "notes": "",
     "pkgPath": "anime/src/en/hstream.js"
 }];
+
 class DefaultExtension extends MProvider {
     constructor() {
         super();
@@ -115,9 +116,17 @@ class DefaultExtension extends MProvider {
         const genres = doc.select("ul.list-none > li > a").map(it => it.text);
         const status = 1; // 1 = Completed
 
+        const dateUploadStr = doc.selectFirst("a:has(i.fa-upload)")?.text?.trim();
+        const dateUpload = dateUploadStr ? new Date(dateUploadStr).getTime().toString() : Date.now().toString();
+
+        const numMatch = url.match(/-(\d+)\/?$/);
+        const num = numMatch ? numMatch[1] : "1";
+        const episodeName = `Episode ${num}`;
+
         const chapters = [{
-            name: "Watch",
-            url: url
+            name: episodeName,
+            url: url,
+            dateUpload: dateUpload
         }];
 
         return {
@@ -138,23 +147,23 @@ class DefaultExtension extends MProvider {
         }
         return `/${resolution}/manifest.mpd`;
     }
-
+    
     async getVideoList(url) {
         const initialRes = await this.client.get(url, this.getHeaders());
         const doc = new Document(initialRes.body);
 
-        // FIX: Handle the case where 'Set-Cookie' might be an array
         let setCookieHeader = initialRes.headers['Set-Cookie'] || '';
         if (Array.isArray(setCookieHeader)) {
             setCookieHeader = setCookieHeader.join('; ');
         }
         
         const tokenCookie = setCookieHeader.split(';').find(c => c.trim().startsWith('XSRF-TOKEN='));
-        
         if (!tokenCookie) {
-             throw new Error("Could not find XSRF-TOKEN cookie.");
+             throw new Error("Could not find XSRF-TOKEN cookie. Cloudflare might be active.");
         }
-        const token = decodeURIComponent(tokenCookie.split('=')[1]);
+
+        const tokenValue = tokenCookie.substring(tokenCookie.indexOf('=') + 1);
+        const token = decodeURIComponent(tokenValue);
 
         const episodeId = doc.selectFirst("input#e_id")?.attr("value");
         if (!episodeId) {
@@ -162,15 +171,15 @@ class DefaultExtension extends MProvider {
         }
 
         const apiHeaders = {
-            ...this.getHeaders(url),
+            "Referer": url,
+            "Origin": this.source.baseUrl,
             "X-Requested-With": "XMLHttpRequest",
             "X-XSRF-TOKEN": token,
             "Cookie": setCookieHeader,
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36",
             "Content-Type": "application/json"
         };
-        const apiBody = {
-            "episode_id": episodeId
-        };
+        const apiBody = { "episode_id": episodeId };
 
         const apiRes = await this.client.post(`${this.source.baseUrl}/player/api`, apiHeaders, apiBody);
         const playerData = JSON.parse(apiRes.body);
@@ -181,6 +190,8 @@ class DefaultExtension extends MProvider {
 
         const streams = [];
         const randomDomain = playerData.stream_domains[Math.floor(Math.random() * playerData.stream_domains.length)];
+        
+        // FIX: The protocol `https://` is removed to match the working Kotlin implementation.
         const streamBaseUrl = `${randomDomain}/${playerData.stream_url}`;
         
         const resolutions = ["720", "1080"];
@@ -189,17 +200,17 @@ class DefaultExtension extends MProvider {
         }
         
         const subtitles = [{
-            file: `${streamBaseUrl}/eng.ass`,
+            file: `https://${streamBaseUrl}/eng.ass`, // Subtitle URL needs the protocol
             label: "English"
         }];
 
         for (const res of resolutions) {
-            const videoUrl = streamBaseUrl + this._getVideoUrlPath(playerData.legacy !== 0, res);
+            const videoUrl = `https://${streamBaseUrl}` + this._getVideoUrlPath(playerData.legacy !== 0, res);
             streams.push({
                 url: videoUrl,
                 originalUrl: videoUrl,
                 quality: `${res}p`,
-                headers: this.getHeaders(this.source.baseUrl),
+                headers: this.getHeaders(url),
                 subtitles: subtitles,
             });
         }
