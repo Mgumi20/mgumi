@@ -11,7 +11,7 @@ const mangayomiSources = [{
     "hasCloudflare": true,
     "sourceCodeUrl": "",
     "apiUrl": "",
-    "version": "1.0.4",
+    "version": "1.0.5",
     "isManga": false,
     "itemType": 1,
     "isFullData": false,
@@ -112,7 +112,7 @@ class DefaultExtension extends MProvider {
         });
     }
 
-    // FIX: تم إصلاح الدالة للتعامل مع عناصر السكربت الفارغة
+    // FIX: تم إصلاح الدالة بالكامل لتطابق منطق Kotlin
     async getVideoList(url) {
         const res = await this.client.get(url, this.getHeaders());
         const doc = new Document(res.body);
@@ -120,8 +120,7 @@ class DefaultExtension extends MProvider {
         const scripts = doc.select("script");
         let targetScript = null;
         for (const script of scripts) {
-            // إضافة تحقق للتأكد من أن `script.data` ليس فارغاً
-            if (script.data && script.data.includes("window.initialRoomDossier")) {
+            if (script.data.includes("window.initialRoomDossier")) {
                 targetScript = script.data;
                 break;
             }
@@ -138,19 +137,26 @@ class DefaultExtension extends MProvider {
         
         const unescapedJson = this._unescapeUnicode(jsonString);
         
-        const m3u8Match = unescapedJson.match(/"hls_source":\s*"(.*?\.m3u8)"/);
-        const m3u8Url = m3u8Match ? m3u8Match[1] : null;
+        // استخدام نفس التعبير النمطي من Kotlin لاستخراج الجزء الأساسي من الرابط
+        const m3u8Match = unescapedJson.match(/"hls_source":\s*"(.*)\.m3u8"/);
+        const m3u8Base = m3u8Match ? m3u8Match[1] : null;
         
-        if (!m3u8Url) {
+        if (!m3u8Base) {
             throw new Error("Could not find M3U8 stream URL.");
         }
+        
+        // إعادة بناء الرابط النهائي بنفس طريقة Kotlin
+        const finalM3u8Url = m3u8Base + ".m3u8";
 
         return [{
-            url: m3u8Url,
-            originalUrl: m3u8Url,
+            url: finalM3u8Url,
+            originalUrl: finalM3u8Url,
             quality: "Live",
             isM3U8: true,
-            headers: this.getHeaders(url)
+            // استخدام ترويسة بسيطة كما هو مقترح في الشيفرة المرجعية
+            headers: {
+                "Referer": this.source.baseUrl
+            }
         }];
     }
 
@@ -180,4 +186,4 @@ class DefaultExtension extends MProvider {
     getSourcePreferences() {
         return [];
     }
-}```
+}
