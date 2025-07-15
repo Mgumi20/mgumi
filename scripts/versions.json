@@ -32,6 +32,12 @@
         }
     },
     "anime": {
+        "HStream": {
+            "name": "HStream",
+            "version": "1.0.0",
+            "langs": "en",
+            "lastUpd": 1752541523.164313
+        },
         "AnimeBlkom": {
             "name": "AnimeBlkom",
             "version": "1.0.1",

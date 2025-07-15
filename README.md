@@ -20,6 +20,7 @@ This repository contains the available javascript extension catalogues for the M
 
 | Name | Version | Language | Last Updated |
 |------|---------|----------|---------------|
+| HStream | 1.0.0 | en | 2025/07/15 06:35 IST |
 | AnimeBlkom | 1.0.1 | ar | 2025/07/15 06:22 IST |
 | XPrime | 2.1.1 | all | 2025/07/12 22:05 IST |
 | Aniplay | 1.6.4 | en | 2025/07/04 16:09 IST |
