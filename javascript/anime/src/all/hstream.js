@@ -22,36 +22,42 @@ const mangayomiSources = [
 ];
 
 class DefaultExtension extends MProvider {
-  getHeaders(url) {
-    return {
-      Referer: url,
-      Origin: url,
-    };
+  constructor() {
+    super();
+    this.client = new Client();
   }
 
   getPreference(key) {
     return new SharedPreferences().get(key);
   }
 
-  async request(slug) {
-    const baseUrl = this.source.baseUrl;
-    const url = `${baseUrl}${slug}`;
-    const res = await new Client().get(url, this.getHeaders(baseUrl));
-    return new Document(res.body);
+  getHeaders() {
+    return {
+      Referer: this.source.baseUrl,
+      Origin: this.source.baseUrl,
+      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.6832.64 Safari/537.36",
+    };
+  }
+
+  async request(url) {
+    const res = await this.client.get(url, { headers: this.getHeaders() });
+    return res.body;
   }
 
   async getList(slug) {
-    const body = await this.request(slug);
-    const list = [];
-    const items = body.select("div.items-center div.w-full > a");
-    items.forEach((element) => {
-      const link = element.getAttr("href");
-      const title = element.selectFirst("img").getAttr("alt");
-      const episode = link.split("-").pop().split("/")[0];
-      const thumbnail_url = `${this.source.baseUrl}/images${link.substring(0, link.lastIndexOf("-"))}/cover-ep-${episode}.webp`;
-      list.push({ name: title, link, imageUrl: thumbnail_url });
+    const html = await this.request(this.source.baseUrl + slug);
+    const doc = new Document(html);
+    const elements = doc.select("div.items-center div.w-full > a");
+
+    const list = elements.map((el) => {
+      const url = el.getAttr("href");
+      const title = el.selectFirst("img").getAttr("alt");
+      const episode = url.split("-").pop().split("/")[0];
+      const imageUrl = `${this.source.baseUrl}/images${url.substring(0, url.lastIndexOf("-"))}/cover-ep-${episode}.webp`;
+      return { name: title, link: url, imageUrl };
     });
-    const hasNextPage = body.select("span[aria-current] + a").length > 0;
+
+    const hasNextPage = doc.select("span[aria-current] + a").length > 0;
     return { list, hasNextPage };
   }
 
@@ -64,21 +70,19 @@ class DefaultExtension extends MProvider {
   }
 
   async search(query, page, filters) {
-    const url = new URL(`${this.source.baseUrl}/search`);
-    url.searchParams.append("s", query);
-    url.searchParams.append("page", page);
-    url.searchParams.append("order", "view-count");
-    return await this.getList(url.pathname + "?" + url.searchParams.toString());
+    return await this.getList(`/search?s=${query}&page=${page}`);
   }
 
   async getDetail(url) {
-    const body = await this.request(url);
-    const title = body.selectFirst("div.relative h1").text;
-    const imageUrl = body.selectFirst("div.float-left img").getAttr("src");
-    const description = body.selectFirst("div.relative p.leading-tight")?.text ?? "";
-    const genre = body.select("ul.list-none > li > a").map((g) => g.text).join(", ");
+    const html = await this.request(this.source.baseUrl + url);
+    const doc = new Document(html);
 
+    const title = doc.selectFirst("div.relative h1").text;
+    const imageUrl = doc.selectFirst("div.float-left img").getAttr("src");
+    const description = doc.selectFirst("div.relative p.leading-tight")?.text ?? "";
+    const genre = doc.select("ul.list-none > li > a").map((g) => g.text).join(", ");
     const episodeNumber = url.split("-").pop().split("/")[0];
+
     const chapters = [
       {
         name: `Episode ${episodeNumber}`,
@@ -87,56 +91,36 @@ class DefaultExtension extends MProvider {
       },
     ];
 
-    return {
-      name: title,
-      imageUrl,
-      description,
-      link: this.source.baseUrl + url,
-      genre,
-      chapters,
-    };
+    return { name: title, imageUrl, link: this.source.baseUrl + url, description, genre: [genre], status: 1, chapters };
   }
 
   async getVideoList(url) {
-    const response = await new Client().get(`${this.source.baseUrl}${url}`);
-    const doc = new Document(response.body);
+    const html = await this.request(this.source.baseUrl + url);
+    const doc = new Document(html);
 
-    const tokenCookie = response.headers["set-cookie"]?.find((c) => c.includes("XSRF-TOKEN"));
-    const token = decodeURIComponent(tokenCookie?.split("=")[1].split(";")[0]);
+    const token = doc.html().match(/XSRF-TOKEN=([^;]+)/)?.[1];
     const episodeId = doc.selectFirst("input#e_id").getAttr("value");
+    const headers = this.getHeaders();
+    headers["Content-Type"] = "application/json";
+    headers["X-Requested-With"] = "XMLHttpRequest";
+    headers["X-XSRF-TOKEN"] = decodeURIComponent(token);
 
     const body = JSON.stringify({ episode_id: episodeId });
-    const headers = {
-      Referer: `${this.source.baseUrl}${url}`,
-      Origin: this.source.baseUrl,
-      "Content-Type": "application/json",
-      "X-Requested-With": "XMLHttpRequest",
-      "X-XSRF-TOKEN": token,
-    };
+    const res = await this.client.post(`${this.source.baseUrl}/player/api`, headers, body);
+    const data = JSON.parse(res.body);
 
-    const apiResponse = await new Client().post(
-      `${this.source.baseUrl}/player/api`,
-      headers,
-      body
-    );
-
-    const json = JSON.parse(apiResponse.body);
-    const base = `${json.stream_domains[0]}/${json.stream_url}`;
-
+    const base = `${data.stream_domains[0]}/${data.stream_url}`;
     const resolutions = ["720", "1080"];
-    if (json.resolution === "4k") resolutions.push("2160");
+    if (data.resolution === "4k") resolutions.push("2160");
 
-    const legacy = json.legacy !== 0;
-    const videos = resolutions.map((res) => {
-      let streamUrl;
-      if (legacy) {
-        streamUrl = base + (res === "720" ? "/x264.720p.mp4" : `/av1.${res}.webm`);
-      } else {
-        streamUrl = `${base}/${res}/manifest.mpd`;
-      }
+    const legacy = data.legacy !== 0;
+    const streams = resolutions.map((res) => {
+      const url = legacy ?
+        (res === "720" ? `${base}/x264.720p.mp4` : `${base}/av1.${res}.webm`) :
+        `${base}/${res}/manifest.mpd`;
       return {
-        url: streamUrl,
-        originalUrl: streamUrl,
+        url,
+        originalUrl: url,
         quality: `${res}p`,
         headers,
         subtitles: [{ file: `${base}/eng.ass`, label: "English" }],
@@ -144,7 +128,7 @@ class DefaultExtension extends MProvider {
     });
 
     const pref = this.getPreference("hstream_video_resolution") || "720p";
-    return videos.sort((a, b) => b.quality.includes(pref) - a.quality.includes(pref));
+    return streams.sort((a, b) => b.quality.includes(pref) - a.quality.includes(pref));
   }
 
   get supportsLatest() {
@@ -157,10 +141,10 @@ class DefaultExtension extends MProvider {
         key: "hstream_video_resolution",
         listPreference: {
           title: "Preferred video resolution",
-          summary: "Choose default streaming quality",
+          summary: "",
           valueIndex: 0,
-          entries: ["720p (HD)", "1080p (Full HD)", "2160p (4K)", "Auto"],
-          entryValues: ["720p", "1080p", "2160p", "auto"],
+          entries: ["Auto", "720p", "1080p", "2160p"],
+          entryValues: ["Auto", "720p", "1080p", "2160p"],
         },
       },
     ];
