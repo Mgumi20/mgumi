@@ -11,7 +11,7 @@ const mangayomiSources = [{
     "hasCloudflare": true,
     "sourceCodeUrl": "",
     "apiUrl": "",
-    "version": "1.0.9",
+    "version": "1.1.0",
     "isManga": false,
     "itemType": 1,
     "isFullData": false,
@@ -73,6 +73,13 @@ class DefaultExtension extends MProvider {
         const url = `${this.source.baseUrl}/api/ts/roomlist/room-list/?limit=90&offset=${offset}`;
         return await this._parseApiResponse(url);
     }
+
+    
+    // ترجع فارغ علشان ما تظهر شي في قسم Popular
+    async getPopular(page) {
+    return { list: [], hasNextPage: false };
+    }
+
 
     // Updated search function to use the new filters.
     async search(query, page, filters) {
