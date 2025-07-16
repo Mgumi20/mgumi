@@ -32,17 +32,17 @@
         }
     },
     "anime": {
+        "Chatrubate": {
+            "name": "Chatrubate",
+            "version": "1.0.9",
+            "langs": "en",
+            "lastUpd": 1752704668.8321
+        },
         "Hstream": {
             "name": "Hstream",
             "version": "1.4.0",
             "langs": "en",
             "lastUpd": 1752704358.0324
-        },
-        "Chatrubate": {
-            "name": "Chatrubate",
-            "version": "1.0.8",
-            "langs": "en",
-            "lastUpd": 1752673894.36798
         },
         "WitAnime": {
             "name": "WitAnime",
