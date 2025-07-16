@@ -11,7 +11,7 @@ const mangayomiSources = [{
     "hasCloudflare": true,
     "sourceCodeUrl": "",
     "apiUrl": "",
-    "version": "1.2.1",
+    "version": "1.2.2",
     "isManga": false,
     "itemType": 1,
     "isFullData": false,
@@ -121,47 +121,72 @@ class DefaultExtension extends MProvider {
         };
     }
     
-    async getVideoList(url) {
-        const res = await this.client.get(url, this.getHeaders());
-        const doc = new Document(res.body);
+async getVideoList(url) {
+    // Fetch the episode page
+    const res = await this.client.get(url, this.getHeaders());
+    const doc = new Document(res.body);
 
-        const subtitleLinkElement = doc.selectFirst("a[href$=.ass]");
-        if (!subtitleLinkElement) {
-            throw new Error("Could not find the subtitle download link. The page structure may have changed.");
+    // Try selecting all <a> elements and finding the one with .ass in href
+    // This works even if selectFirst("a[href$=.ass]") fails
+    const links = doc.selectAll("a");
+    let subtitleLinkElement = null;
+    for (const link of links) {
+        // Try to get href using getHref() or getAttribute('href')
+        let href = null;
+        if (typeof link.getHref === 'function') {
+            href = link.getHref();
+        } else if (typeof link.getAttribute === 'function') {
+            href = link.getAttribute('href');
         }
-
-        const subtitleUrl = subtitleLinkElement.getHref;
-        const streamBaseUrl = subtitleUrl.substring(0, subtitleUrl.lastIndexOf('/') + 1);
-
-        const streams = [];
-        const resolutions = ["720", "1080", "2160"];
-
-        const subtitles = [{
-            file: subtitleUrl,
-            label: "English",
-        }];
-
-        for (const res of resolutions) {
-            const videoUrl = `${streamBaseUrl}${res}/manifest.mpd`;
-            streams.push({
-                url: videoUrl,
-                originalUrl: videoUrl,
-                // FIX: تم تعديل اسم الجودة ليشمل رابط الفيديو الكامل
-                quality: `${res}p [${videoUrl}]`,
-                headers: this.getHeaders(url),
-                subtitles: subtitles,
-            });
+        if (href && href.endsWith('.ass')) {
+            subtitleLinkElement = link;
+            break;
         }
-        
-        const prefQuality = this.getPreference("pref_quality_key") || "1080";
-        const sortedStreams = streams.sort((a, b) => {
-            if (a.quality.includes(prefQuality)) return -1;
-            if (b.quality.includes(prefQuality)) return 1;
-            return parseInt(b.quality) - parseInt(a.quality);
-        });
-
-        return sortedStreams;
     }
+    if (!subtitleLinkElement) {
+        throw new Error("Could not find the subtitle download link. The page structure may have changed.");
+    }
+
+    // Get the subtitle URL
+    const subtitleUrl = typeof subtitleLinkElement.getHref === 'function'
+        ? subtitleLinkElement.getHref()
+        : subtitleLinkElement.getAttribute('href');
+
+    // Get stream base URL
+    const streamBaseUrl = subtitleUrl.substring(0, subtitleUrl.lastIndexOf('/') + 1);
+
+    // Subtitle object
+    const subtitles = [{
+        file: subtitleUrl,
+        label: "English",
+    }];
+
+    // Video qualities to attempt
+    const resolutions = ["720", "1080", "2160"];
+    const streams = [];
+
+    for (const res of resolutions) {
+        const videoUrl = `${streamBaseUrl}${res}/manifest.mpd`;
+        streams.push({
+            url: videoUrl,
+            originalUrl: videoUrl,
+            quality: `${res}p [${videoUrl}]`,
+            headers: this.getHeaders(url),
+            subtitles: subtitles,
+        });
+    }
+
+    // Preferred quality sorting
+    const prefQuality = this.getPreference("pref_quality_key") || "1080";
+    const sortedStreams = streams.sort((a, b) => {
+        if (a.quality.includes(prefQuality)) return -1;
+        if (b.quality.includes(prefQuality)) return 1;
+        // Compare numeric qualities
+        return parseInt(b.quality) - parseInt(a.quality);
+    });
+
+    return sortedStreams;
+}
 
     getSourcePreferences() {
         return [{
