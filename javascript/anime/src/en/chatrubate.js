@@ -11,7 +11,7 @@ const mangayomiSources = [{
     "hasCloudflare": true,
     "sourceCodeUrl": "",
     "apiUrl": "",
-    "version": "1.0.6",
+    "version": "1.0.7",
     "isManga": false,
     "itemType": 1,
     "isFullData": false,
@@ -32,6 +32,7 @@ class DefaultExtension extends MProvider {
         return new SharedPreferences().get(key);
     }
 
+    // This function creates the necessary headers to make requests look legitimate.
     getHeaders(referer = this.source.baseUrl) {
         return {
             "Referer": referer,
@@ -40,48 +41,56 @@ class DefaultExtension extends MProvider {
         };
     }
 
-    // دالة مساعدة لتحليل قائمة الغرف من استجابة ה-API
+    // Helper function to parse room lists from the API response.
     async _parseApiResponse(url) {
-        const res = await this.client.get(url, this.getHeaders());
-        const data = JSON.parse(res.body);
-        const list = [];
-        for (const room of data.rooms) {
-            list.push({
-                name: room.username,
-                link: `${this.source.baseUrl}/${room.username}/`,
-                imageUrl: room.img
-            });
+        try {
+            const res = await this.client.get(url, this.getHeaders());
+            const data = JSON.parse(res.body);
+            const list = [];
+            if (data && data.rooms) {
+                for (const room of data.rooms) {
+                    list.push({
+                        name: room.username,
+                        link: `${this.source.baseUrl}/${room.username}/`,
+                        imageUrl: room.image_url_360x270 || room.img // Use a more reliable image source if available
+                    });
+                }
+            }
+            return {
+                list,
+                hasNextPage: list.length > 0
+            };
+        } catch (e) {
+            // If the API fails, return an empty list instead of crashing.
+            console.error("Failed to parse API response from: " + url);
+            return { list: [], hasNextPage: false };
         }
-        return {
-            list,
-            hasNextPage: list.length > 0
-        };
     }
 
-    // "getPopular" سيعرض دائمًا الفئة المميزة (Featured)
+    // 'getPopular' will always show the "Featured" category.
     async getPopular(page) {
         const offset = page > 1 ? 90 * (page - 1) : 0;
         const url = `${this.source.baseUrl}/api/ts/roomlist/room-list/?limit=90&offset=${offset}`;
         return await this._parseApiResponse(url);
     }
 
-    // "getLatestUpdates" سيعرض أيضًا الفئة المميزة كقيمة افتراضية
+    // 'getLatestUpdates' will also show "Featured" as the default.
     async getLatestUpdates(page) {
         const offset = page > 1 ? 90 * (page - 1) : 0;
         const url = `${this.source.baseUrl}/api/ts/roomlist/room-list/?limit=90&offset=${offset}`;
         return await this._parseApiResponse(url);
     }
 
-    // تم تحديث دالة البحث لاستخدام الفلاتر الجديدة
+    // Updated search function to use the new filters.
     async search(query, page, filters) {
         const offset = page > 1 ? 90 * (page - 1) : 0;
         let url = "";
 
         if (query) {
-            // إذا كان هناك نص بحث، استخدم البحث بالهاشتاغ
+            // If there's a search query, use the hashtag search.
             url = `${this.source.baseUrl}/api/ts/roomlist/room-list/?hashtags=${encodeURIComponent(query)}&limit=90&offset=${offset}`;
         } else {
-            // إذا لم يكن هناك نص بحث، استخدم الفلتر المحدد
+            // If there's no query, use the selected filter.
             const categoryFilter = filters[0];
             const selectedCategoryPath = categoryFilter.values[categoryFilter.state].value;
             url = `${this.source.baseUrl}${selectedCategoryPath}&offset=${offset}`;
@@ -90,17 +99,19 @@ class DefaultExtension extends MProvider {
         return await this._parseApiResponse(url);
     }
 
+    // Gets details for a specific room by scraping meta tags.
     async getDetail(url) {
-        const res = await this.client.get(url, this.getHeaders());
+        const res = await this.client.get(url, this.getHeaders(url));
         const doc = new Document(res.body);
 
-        const name = doc.selectFirst("meta[property=og:title]")?.attr("content")?.replace("| PornHoarder.tv", "").trim() || "Unknown";
+        const name = doc.selectFirst("meta[property='og:title']")?.attr("content")?.trim() || "Unknown";
         const imageUrl = doc.selectFirst("meta[property='og:image']")?.attr("content");
-        const description = doc.selectFirst("meta[property=og:description]")?.attr("content")?.trim();
+        const description = doc.selectFirst("meta[property='og:description']")?.attr("content")?.trim();
         
+        // A live stream is treated as a single "chapter".
         const chapters = [{
             name: "Live Stream",
-            url: url
+            url: url // Pass the room's URL to getVideoList.
         }];
 
         return {
@@ -112,53 +123,60 @@ class DefaultExtension extends MProvider {
         };
     }
     
+    // Unescapes unicode characters like \u0022 to ".
     _unescapeUnicode(str) {
         return str.replace(/\\u([\d\w]{4})/gi, (match, grp) => {
             return String.fromCharCode(parseInt(grp, 16));
         });
     }
 
+    // This is the most critical function. It finds the actual video stream URL.
     async getVideoList(url) {
-        const res = await this.client.get(url, this.getHeaders());
-        const doc = new Document(res.body);
+        const res = await this.client.get(url, this.getHeaders(url));
+        const html = res.body;
         
-        const scripts = doc.select("script");
-        let targetScript = null;
-        for (const script of scripts) {
-            if (script.data.includes("window.initialRoomDossier")) {
-                targetScript = script.data;
-                break;
-            }
-        }
+        // IMPROVEMENT: Use a more robust regex to extract the JSON data directly.
+        // This is less likely to break than splitting the string.
+        const dossierMatch = html.match(/window\.initialRoomDossier\s*=\s*"(.*?)";/);
 
-        if (!targetScript) {
-            throw new Error("Could not find initialRoomDossier script.");
+        if (!dossierMatch || !dossierMatch[1]) {
+            throw new Error("Could not find or extract window.initialRoomDossier data.");
         }
-
-        const jsonString = targetScript.split('window.initialRoomDossier = "')[1]?.split('";')[0];
-        if (!jsonString) {
-            throw new Error("Could not extract room dossier JSON.");
-        }
+        
+        let jsonString = dossierMatch[1];
+        
+        // The string is double-escaped (e.g., \\u0022). We need to replace \\ with \ first.
+        jsonString = jsonString.replace(/\\\\/g, '\\');
         
         const unescapedJson = this._unescapeUnicode(jsonString);
-        
-        const m3u8Match = unescapedJson.match(/"hls_source":\s*"(.*?\.m3u8)"/);
-        const m3u8Url = m3u8Match ? m3u8Match[1] : null;
-        
-        if (!m3u8Url) {
-            throw new Error("Could not find M3U8 stream URL.");
+
+        let roomData;
+        try {
+            // IMPROVEMENT: Parse the full JSON to safely access properties.
+            roomData = JSON.parse(unescapedJson);
+        } catch (e) {
+            console.error("Failed to parse room dossier JSON:", e);
+            console.error("Unescaped JSON string:", unescapedJson);
+            throw new Error("Could not parse the room data JSON.");
         }
 
+        const m3u8Url = roomData.hls_source;
+        
+        if (!m3u8Url) {
+            throw new Error("Could not find M3U8 stream URL (hls_source) in the room data.");
+        }
+
+        // THIS IS THE FIX: Return the URL along with the necessary headers.
+        // The 'Referer' header is crucial for the video server to accept the request.
         return [{
             url: m3u8Url,
             originalUrl: m3u8Url,
             quality: "Live",
-            isM3U8: true,
             headers: this.getHeaders(url)
         }];
     }
 
-    // FIX: تم استبدال الفلاتر المعقدة بفلتر بسيط يعتمد على الفئات
+    // A simple filter list based on main page categories.
     getFilterList() {
         const mainPageCategories = [
             { name: "Featured", value: "/api/ts/roomlist/room-list/?limit=90" },
@@ -177,12 +195,12 @@ class DefaultExtension extends MProvider {
         return [{
             type_name: "SelectFilter",
             name: "Category",
-            state: 0, // القيمة الافتراضية هي "Featured"
+            state: 0, // Default value is "Featured".
             values: filterValues
         }];
     }
     
-    // هذه الدالة أصبحت غير ضرورية الآن، ولكن يمكن إبقاؤها فارغة
+    // No specific preferences are needed for this source.
     getSourcePreferences() {
         return [];
     }
