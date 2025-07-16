@@ -11,7 +11,7 @@ const mangayomiSources = [{
     "hasCloudflare": true,
     "sourceCodeUrl": "",
     "apiUrl": "",
-    "version": "1.1.6",
+    "version": "1.1.7",
     "isManga": false,
     "itemType": 1,
     "isFullData": false,
@@ -121,47 +121,46 @@ class DefaultExtension extends MProvider {
         };
     }
     
-    async getVideoList(url) {
-        const res = await this.client.get(url, this.getHeaders());
-        const doc = new Document(res.body);
+async getVideoList(url) {
+    const res = await this.client.get(url, this.getHeaders());
+    const doc = new Document(res.body);
 
-        const subtitleLinkElement = doc.selectFirst("a[href$=.ass]");
-        if (!subtitleLinkElement) {
-            throw new Error("Could not find the subtitle download link. The page structure may have changed.");
-        }
-
-        const subtitleUrl = subtitleLinkElement.getHref;
-        const streamBaseUrl = subtitleUrl.substring(0, subtitleUrl.lastIndexOf('/') + 1);
-
-        const streams = [];
-        const resolutions = ["720", "1080", "2160"];
-
-        const subtitles = [{
-            file: subtitleUrl,
-            label: "English",
-        }];
-
-        for (const res of resolutions) {
-            const videoUrl = `${streamBaseUrl}${res}/manifest.mpd`;
-            streams.push({
-                url: videoUrl,
-                originalUrl: videoUrl,
-                // FIX: تم تعديل اسم الجودة ليشمل رابط الفيديو الكامل
-                quality: `${res}p [${videoUrl}]`,
-                headers: this.getHeaders(url),
-                subtitles: subtitles,
-            });
-        }
-        
-        const prefQuality = this.getPreference("pref_quality_key") || "1080";
-        const sortedStreams = streams.sort((a, b) => {
-            if (a.quality.includes(prefQuality)) return -1;
-            if (b.quality.includes(prefQuality)) return 1;
-            return parseInt(b.quality) - parseInt(a.quality);
-        });
-
-        return sortedStreams;
+    const subtitleLinkElement = doc.selectFirst("a[href$=.ass]");
+    if (!subtitleLinkElement) {
+        throw new Error("Could not find the subtitle download link. The page structure may have changed.");
     }
+
+    const subtitleUrl = subtitleLinkElement.getHref();  // ✅ fixed here
+    const streamBaseUrl = subtitleUrl.substring(0, subtitleUrl.lastIndexOf('/') + 1);  // ✅ gives full episode folder path
+
+    const resolutions = ["720", "1080", "2160"];
+
+    const subtitles = [{
+        file: subtitleUrl,
+        label: "English",
+    }];
+
+    const streams = resolutions.map(res => {
+        const videoUrl = `${streamBaseUrl}${res}/manifest.mpd`;
+        return {
+            url: videoUrl,
+            originalUrl: videoUrl,
+            quality: `${res}p`,
+            headers: this.getHeaders(url),
+            subtitles: subtitles,
+        };
+    });
+
+    const prefQuality = this.getPreference("pref_quality_key") || "1080";
+    const sortedStreams = streams.sort((a, b) => {
+        if (a.quality.includes(prefQuality)) return -1;
+        if (b.quality.includes(prefQuality)) return 1;
+        return parseInt(b.quality) - parseInt(a.quality);
+    });
+
+    return sortedStreams;
+}
+
 
     getSourcePreferences() {
         return [{
