@@ -11,7 +11,7 @@ const mangayomiSources = [{
     "hasCloudflare": true,
     "sourceCodeUrl": "",
     "apiUrl": "",
-    "version": "1.3.8",
+    "version": "1.3.9",
     "isManga": false,
     "itemType": 1,
     "isFullData": false,
@@ -98,7 +98,7 @@ class DefaultExtension extends MProvider {
             imageUrl = this.source.baseUrl + imageUrl;
         }
 
-        const description = doc.selectFirst("div.relative > p.leading-tight")?.text;
+        const description = doc.selectFirst("div.justify-around > a[href$=.ass]");
         const genres = doc.select("ul.list-none > li > a").map(it => it.text);
 
         // تحديد الحالة بشكل ثابت كما في مثال Kotlin
