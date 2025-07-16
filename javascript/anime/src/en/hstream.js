@@ -11,7 +11,7 @@ const mangayomiSources = [{
     "hasCloudflare": true,
     "sourceCodeUrl": "",
     "apiUrl": "",
-    "version": "1.2.5",
+    "version": "1.2.6",
     "isManga": false,
     "itemType": 1,
     "isFullData": false,
@@ -21,6 +21,7 @@ const mangayomiSources = [{
     "notes": "",
     "pkgPath": "anime/src/en/hstream.js"
 }];
+
 
 class DefaultExtension extends MProvider {
     constructor() {
@@ -80,18 +81,15 @@ class DefaultExtension extends MProvider {
         const list = this._parseVideoList(doc);
         return { list, hasNextPage: false };
     }
-    
+
     async getDetail(url) {
         const res = await this.client.get(url, this.getHeaders());
         const doc = new Document(res.body);
 
-        // استخدام محددات أكثر دقة بناءً على مثال Kotlin
         const infoContainer = doc.selectFirst("div.relative > div.justify-between > div");
-
         const name = infoContainer.selectFirst("div > h1")?.text?.trim() || "No Title";
-        const author = infoContainer.selectFirst("div > a:nth-of-type(3)")?.text?.trim(); // جلب اسم الفنان
+        const author = infoContainer.selectFirst("div > a:nth-of-type(3)")?.text?.trim();
 
-        // استخدام المحدد الصحيح للصورة والتأكد من أن الرابط كامل
         let imageUrl = doc.selectFirst("div.float-left > img.object-cover")?.getSrc;
         if (imageUrl && !imageUrl.startsWith("http")) {
             imageUrl = this.source.baseUrl + imageUrl;
@@ -100,108 +98,85 @@ class DefaultExtension extends MProvider {
         const description = doc.selectFirst("div.relative > p.leading-tight")?.text;
         const genres = doc.select("ul.list-none > li > a").map(it => it.text);
 
-        // تحديد الحالة بشكل ثابت كما في مثال Kotlin
-        const status = 1; // 1 = Completed
+        const status = 1;
 
-        // هذا المصدر يعرض فيديو واحد، لذلك ننشئ "فصل" واحد لتشغيله
-        const chapters = [{
-            name: "Watch",
-            url: url
-        }];
+        const chapters = [{ name: "Watch", url }];
 
-        return {
-            name,
-            author,      // تمت إضافة الفنان
-            imageUrl,    // تم تحديث محدد الصورة
-            description, // تم تحديث محدد الوصف
-            genre: genres,
-            status,      // تمت إضافة الحالة
-            chapters,
-            link: url
+        return { name, author, imageUrl, description, genre: genres, status, chapters, link: url };
+    }
+
+    async getVideoList(url) {
+        const res = await this.client.get(url, this.getHeaders());
+        const doc = new Document(res.body);
+
+        const episodeInput = doc.selectFirst("input#e_id");
+        if (!episodeInput) throw new Error("Episode ID not found");
+        const episodeId = episodeInput.attr("value");
+
+        let xsrfToken = null;
+        const csrfScript = doc.selectFirst('script[data-csrf]');
+        if (csrfScript) {
+            xsrfToken = csrfScript.attr('data-csrf');
+        }
+
+        if (!xsrfToken) {
+            const tokenInput = doc.selectFirst('input[name="_token"]');
+            if (tokenInput) {
+                xsrfToken = tokenInput.attr("value");
+            }
+        }
+
+        if (!xsrfToken) {
+            throw new Error("XSRF token not found in HTML");
+        }
+
+        const headers = {
+            ...this.getHeaders(url),
+            "Content-Type": "application/json",
+            "X-Requested-With": "XMLHttpRequest",
+            "X-XSRF-TOKEN": xsrfToken
         };
-    }
-    
-async getVideoList(url) {
-    const res = await this.client.get(url, this.getHeaders());
-    const doc = new Document(res.body);
 
-    const episodeInput = doc.selectFirst("input#e_id");
-    if (!episodeInput) throw new Error("Episode ID not found");
-    const episodeId = episodeInput.attr("value");
+        const body = JSON.stringify({ episode_id: episodeId });
+        const apiRes = await this.client.post(`${this.source.baseUrl}/player/api`, body, headers);
+        const json = JSON.parse(apiRes.body);
 
-    // استخراج XSRF-TOKEN من HTML (script[data-csrf] أو input[name=_token])
-    let xsrfToken = null;
+        const streamUrl = json.stream_url;
+        const domain = json.stream_domains[0];
+        const isLegacy = json.legacy !== 0;
 
-    const csrfScript = doc.selectFirst('script[data-csrf]');
-    if (csrfScript) {
-        xsrfToken = csrfScript.attr('data-csrf');
-    }
+        const baseVideoUrl = `${domain}/${streamUrl}`;
+        const subtitles = [{ file: `${baseVideoUrl}/eng.ass`, label: "English" }];
 
-    if (!xsrfToken) {
-        const tokenInput = doc.selectFirst('input[name="_token"]');
-        if (tokenInput) {
-            xsrfToken = tokenInput.attr("value");
-        }
-    }
+        const resolutions = ["720", "1080"];
+        if (json.resolution === "4k") resolutions.push("2160");
 
-    if (!xsrfToken) {
-        throw new Error("XSRF token not found in HTML");
-    }
+        const videoList = [];
+        for (const res of resolutions) {
+            let videoPath = "";
+            if (isLegacy) {
+                videoPath = (res === "720") ? "/x264.720p.mp4" : `/av1.${res}.webm`;
+            } else {
+                videoPath = `/${res}/manifest.mpd`;
+            }
 
-    const headers = {
-        ...this.getHeaders(url),
-        "Content-Type": "application/json",
-        "X-Requested-With": "XMLHttpRequest",
-        "X-XSRF-TOKEN": xsrfToken
-    };
-
-    const body = JSON.stringify({ episode_id: episodeId });
-
-    const apiRes = await this.client.post(`${this.source.baseUrl}/player/api`, body, headers);
-    const json = JSON.parse(apiRes.body);
-
-    const streamUrl = json.stream_url;
-    const domain = json.stream_domains[0];
-    const isLegacy = json.legacy !== 0;
-
-    const baseVideoUrl = `${domain}/${streamUrl}`;
-    const subtitles = [{
-        file: `${baseVideoUrl}/eng.ass`,
-        label: "English",
-    }];
-
-    const resolutions = ["720", "1080"];
-    if (json.resolution === "4k") resolutions.push("2160");
-
-    const videoList = [];
-
-    for (const res of resolutions) {
-        let videoPath = "";
-        if (isLegacy) {
-            videoPath = (res === "720") ? "/x264.720p.mp4" : `/av1.${res}.webm`;
-        } else {
-            videoPath = `/${res}/manifest.mpd`;
+            const videoUrl = baseVideoUrl + videoPath;
+            videoList.push({
+                url: videoUrl,
+                originalUrl: videoUrl,
+                quality: `${res}p`,
+                headers,
+                subtitles,
+            });
         }
 
-        const videoUrl = baseVideoUrl + videoPath;
-        videoList.push({
-            url: videoUrl,
-            originalUrl: videoUrl,
-            quality: `${res}p`,
-            headers,
-            subtitles,
+        const prefQuality = this.getPreference("pref_quality_key") || "1080";
+        return videoList.sort((a, b) => {
+            if (a.quality.includes(prefQuality)) return -1;
+            if (b.quality.includes(prefQuality)) return 1;
+            return parseInt(b.quality) - parseInt(a.quality);
         });
     }
-
-    const prefQuality = this.getPreference("pref_quality_key") || "1080";
-    return videoList.sort((a, b) => {
-        if (a.quality.includes(prefQuality)) return -1;
-        if (b.quality.includes(prefQuality)) return 1;
-        return parseInt(b.quality) - parseInt(a.quality);
-    });
-}
-
-
 
     getSourcePreferences() {
         return [{
@@ -213,6 +188,6 @@ async getVideoList(url) {
                 entries: ["720p (HD)", "1080p (FullHD)", "2160p (4K)"],
                 entryValues: ["720", "1080", "2160"],
             },
-        }, ];
+        }];
     }
 }
