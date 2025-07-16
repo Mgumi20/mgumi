@@ -1,119 +1,205 @@
-# Mangayomi Swak Extensions
-
-This repository contains the available javascript extension catalogues for the Mangayomi app.
-
-## Available Extensions List
-<details>
-<summary><span style="font-size:1.7em; font-weight:bold;">Expand list</span></summary>
-
-## Manga
-
-| Name | Version | Language | Last Updated |
-|------|---------|----------|---------------|
-| ReadComicOnline | 0.2.8 | en | 2025/06/27 12:09 IST |
-| WeLoMa | 0.0.8 | ja | 2025/06/07 22:02 IST |
-| Mangapark | 1.0.0 | en | 2025/06/04 20:43 IST |
-| Mangapill | 1.0.3 | en | 2025/05/20 16:17 IST |
-| Weeb Central | 0.1.0 | en | 2025/03/15 03:44 IST |
-
-## Anime
-
-| Name | Version | Language | Last Updated |
-|------|---------|----------|---------------|
-| Hstream | 1.1.3 | en | 2025/07/16 04:47 IST |
-| Chatrubate | 1.0.6 | en | 2025/07/16 04:13 IST |
-| WitAnime | 2.0.1 | ar | 2025/07/16 00:05 IST |
-| XPrime | 2.1.1 | all | 2025/07/12 22:05 IST |
-| Aniplay | 1.6.4 | en | 2025/07/04 16:09 IST |
-| Aniwatch | 1.0.0 | en | 2025/06/30 23:06 IST |
-| Tamilarasan | 0.0.6 | all | 2025/06/29 22:26 IST |
-| Anicrush | 0.0.5 | en | 2025/06/27 22:11 IST |
-| AnimeParadise | 0.1.0 | en | 2025/06/21 18:06 IST |
-| AnimeZZ | 1.1.1 | en | 2025/06/21 16:47 IST |
-| AnimeKai | 0.3.3 | en | 2025/06/14 11:43 IST |
-| Dramacool | 1.1.0 | all | 2025/06/13 11:41 IST |
-| Streamblasters | 1.0.0 | all | 2025/05/31 10:17 IST |
-| Autoembed | 1.3.3 | all | 2025/05/24 19:22 IST |
-| KickAssAnime | 0.0.7 | en | 2025/05/23 13:27 IST |
-| Sudatchi | 1.1.1 | en | 2025/05/20 16:17 IST |
-| Animeonsen | 1.0.1 | en, ja | 2025/05/20 16:17 IST |
-| AnimeGG | 1.0.3 | en | 2025/05/20 16:17 IST |
-| Gojo | 0.0.6 | en | 2025/05/20 16:17 IST |
-| Soaper | 1.0.5 | all | 2025/05/20 16:17 IST |
-| Aniwave | 0.0.7 | en | 2025/05/09 00:11 IST |
-| KissKH | 0.1.6 | all | 2025/05/02 22:47 IST |
-
-## Novel
-
-| Name | Version | Language | Last Updated |
-|------|---------|----------|---------------|
-| Novelbuddy | 0.0.9 | en | 2025/06/09 23:24 IST |
-
-</details>
-
-## How to add the extensions
-
-Click on one of the buttons below to add the corresponding repository/repositories:
-
-<a href="https://intradeus.github.io/http-protocol-redirector?r=mangayomi://add-repo?repo_name=Mangayomi Swak Extensions%26repo_url=https://github.com/Swakshan/mangayomi-swak-extensions%26manga_url=https://raw.githubusercontent.com/Swakshan/mangayomi-swak-extensions/refs/heads/main/index.json%26anime_url=https://raw.githubusercontent.com/Swakshan/mangayomi-swak-extensions/refs/heads/main/anime_index.json"><img alt="Add all repositories" src="images/add-all-repositories.png" height="35"></a>
-
-<a href="https://intradeus.github.io/http-protocol-redirector?r=mangayomi://add-repo?repo_name=Mangayomi Swak Extensions%26repo_url=https://github.com/Swakshan/mangayomi-swak-extensions%26manga_url=https://raw.githubusercontent.com/Swakshan/mangayomi-swak-extensions/refs/heads/main/index.json"><img alt="Add manga repository" src="images/add-manga-repository.png" height="35"></a>
-
-<a href="https://intradeus.github.io/http-protocol-redirector?r=mangayomi://add-repo?repo_name=Mangayomi Swak Extensions%26repo_url=https://github.com/Swakshan/mangayomi-swak-extensions%26anime_url=https://raw.githubusercontent.com/Swakshan/mangayomi-swak-extensions/refs/heads/main/anime_index.json"><img alt="Add anime repository" src="images/add-anime-repository.png" height="35"></a>
-
-<a href="https://intradeus.github.io/http-protocol-redirector?r=mangayomi://add-repo?repo_name=Mangayomi Swak Extensions%26repo_url=https://github.com/Swakshan/mangayomi-swak-extensions%26novel_url=https://raw.githubusercontent.com/Swakshan/mangayomi-swak-extensions/refs/heads/main/novel_index.json"><img alt="Add novel repository" src="images/add-novel-repository.png" height="35"></a>
-
-If you installed the app via Live Container, then use the following buttons instead:
-
-<a href="https://intradeus.github.io/http-protocol-redirector?r=livecontainer://open-url?url=bWFuZ2F5b21pOi8vYWRkLXJlcG8/cmVwb19uYW1lPU1hbmdheW9taSBTd2FrIEV4dGVuc2lvbnMlMjZyZXBvX3VybD1odHRwczovL2dpdGh1Yi5jb20vU3dha3NoYW4vbWFuZ2F5b21pLXN3YWstZXh0ZW5zaW9ucyUyNm1hbmdhX3VybD1odHRwczovL3Jhdy5naXRodWJ1c2VyY29udGVudC5jb20vU3dha3NoYW4vbWFuZ2F5b21pLXN3YWstZXh0ZW5zaW9ucy9yZWZzL2hlYWRzL21haW4vaW5kZXguanNvbiUyNmFuaW1lX3VybD1odHRwczovL3Jhdy5naXRodWJ1c2VyY29udGVudC5jb20vU3dha3NoYW4vbWFuZ2F5b21pLXN3YWstZXh0ZW5zaW9ucy9yZWZzL2hlYWRzL21haW4vYW5pbWVfaW5kZXguanNvbg=="><img alt="Add all repositories" src="images/add-all-repositories-livecontainer.png" height="35"></a>
-
-<a href="https://intradeus.github.io/http-protocol-redirector?r=livecontainer://open-url?url=bWFuZ2F5b21pOi8vYWRkLXJlcG8/cmVwb19uYW1lPU1hbmdheW9taSBTd2FrIEV4dGVuc2lvbnMlMjZyZXBvX3VybD1odHRwczovL2dpdGh1Yi5jb20vU3dha3NoYW4vbWFuZ2F5b21pLXN3YWstZXh0ZW5zaW9ucyUyNm1hbmdhX3VybD1odHRwczovL3Jhdy5naXRodWJ1c2VyY29udGVudC5jb20vU3dha3NoYW4vbWFuZ2F5b21pLXN3YWstZXh0ZW5zaW9ucy9yZWZzL2hlYWRzL21haW4vaW5kZXguanNvbg=="><img alt="Add manga repository" src="images/add-manga-repository-livecontainer.png" height="35"></a>
-
-<a href="https://intradeus.github.io/http-protocol-redirector?r=livecontainer://open-url?url=bWFuZ2F5b21pOi8vYWRkLXJlcG8/cmVwb19uYW1lPU1hbmdheW9taSBTd2FrIEV4dGVuc2lvbnMlMjZyZXBvX3VybD1odHRwczovL2dpdGh1Yi5jb20vU3dha3NoYW4vbWFuZ2F5b21pLXN3YWstZXh0ZW5zaW9ucyUyNmFuaW1lX3VybD1odHRwczovL3Jhdy5naXRodWJ1c2VyY29udGVudC5jb20vU3dha3NoYW4vbWFuZ2F5b21pLXN3YWstZXh0ZW5zaW9ucy9yZWZzL2hlYWRzL21haW4vYW5pbWVfaW5kZXguanNvbg=="><img alt="Add anime repository" src="images/add-anime-repository-livecontainer.png" height="35"></a>
-
-<a href="https://intradeus.github.io/http-protocol-redirector?r=livecontainer://open-url?url=bWFuZ2F5b21pOi8vYWRkLXJlcG8/cmVwb19uYW1lPU1hbmdheW9taSBTd2FrIEV4dGVuc2lvbnMlMjZyZXBvX3VybD1odHRwczovL2dpdGh1Yi5jb20vU3dha3NoYW4vbWFuZ2F5b21pLXN3YWstZXh0ZW5zaW9ucyUyNm5vdmVsX3VybD1odHRwczovL3Jhdy5naXRodWJ1c2VyY29udGVudC5jb20vU3dha3NoYW4vbWFuZ2F5b21pLXN3YWstZXh0ZW5zaW9ucy9yZWZzL2hlYWRzL21haW4vbm92ZWxfaW5kZXguanNvbg=="><img alt="Add novel repository" src="images/add-novel-repository-livecontainer.png" height="35"></a>
-
-Or add them manually in the app (More -> Settings -> Browse):
-
-manga repo
-```
-https://raw.githubusercontent.com/Swakshan/mangayomi-swak-extensions/refs/heads/main/index.json
-```
-
-anime repo 
-```
-https://raw.githubusercontent.com/Swakshan/mangayomi-swak-extensions/refs/heads/main/anime_index.json
-```
-
-novel repo 
-```
-https://raw.githubusercontent.com/Swakshan/mangayomi-swak-extensions/refs/heads/main/novel_index.json
-```
-
 # Contributing
 
-Contributions are welcome!
+This guide have some instructions and tips on how to create a new Mangayomi extension on JavaScript extension.
 
-To get started with development, see [CONTRIBUTING-DART.md](./CONTRIBUTING-DART.md) for create sources in Dart or [CONTRIBUTING-JS.md](./CONTRIBUTING-JS.md) for create sources in JavaScript.
+## Prerequisites
 
-## License
-
-    Copyright 2023 Moustapha Kodjo Amadou
-
-    Licensed under the Apache License, Version 2.0 (the "License");
-    you may not use this file except in compliance with the License.
-    You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-    Unless required by applicable law or agreed to in writing, software
-    distributed under the License is distributed on an "AS IS" BASIS,
-    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-    See the License for the specific language governing permissions and
-    limitations under the License.
+Before starting please have installed the recent desktop version of the mangayomi application preferably or if you want with a tablet too.
 
 
+### Writing your extension
+1. Open the app.
+2. Go to extension tab : 
+![1](https://raw.githubusercontent.com/kodjodevf/mangayomi-extensions/screenshots/1.png)
+3. then click `+` and you will see : 
+![2](https://raw.githubusercontent.com/kodjodevf/mangayomi-extensions/screenshots/2.png)
+4. Fill in the fields with your new source that you would like to create,
+![3](https://raw.githubusercontent.com/kodjodevf/mangayomi-extensions/screenshots/3.png)
+NB: only the `ApiUrl` field is optional
+then click on save
+5. you will see your new source in the extension list
+![4](https://raw.githubusercontent.com/kodjodevf/mangayomi-extensions/screenshots/4.png)
+click to open settings
+6. After click on edit code
+![5](https://raw.githubusercontent.com/kodjodevf/mangayomi-extensions/screenshots/5.png)
+7. Finally you can now write the extension
+![6](https://raw.githubusercontent.com/kodjodevf/mangayomi-extensions/screenshots/6.png)
+- This page contains three parts: 
+    - Code editor: where you will write your code 
+    - Fecth result: where you will test the different implemented methods by having a result in the expected format
+    - Console: which will show you the logs
 
-## Disclaimer
+Once extension is ready you can relocate your code into `mangayomi-extension` project in a `src` or `multisrc` package and create a Pull Request.
 
-We hereby issue this notice to inform you that these extensions just function like an ordinary browser (like your browser) that fetch video files from internet, and do not violate the provisions of the Digital Millennium Copyright Act (DMCA). The Content these extensions may access is not hosted by us or the Mangayomi application but the websites they are browsing in their autonomous mode. It is sole responsibility of the user and his/her countries' or states' law. If you think they are violating any intellectual property then please contact the actual file hosts not the owners of this repository or the Mangayomi app.
+### Source 
+
+| Field | Description |
+| ----- | ----------- |
+| `name` | Name displayed in the "Sources" tab in Mangayomi. |
+| `baseUrl` | Base URL of the source without any trailing slashes. |
+| `apiUrl` | (Optional, defaults is empty) Api URL of the source with trailing slashes. |
+| `lang` | An ISO 639-1 compliant language code (two letters in lower case in most cases, but can also include the country/dialect part by using a simple dash character). |
+| `id` | Identifier of your source, automatically set in `Source`. It should only be manually overriden if you need to copy an existing autogenerated ID. |
+| `isManga` | (Optional, defaults to `true`) specify source type (false for anime and true for manga)|
+| `dateFormat` | (Optional, defaults is empty) |
+| `iconUrl` | The extension icon URL |
+| `version` | The extension version code. This must be incremented with any change to the code. |
+| `dateFormatLocale` | (Optional, defaults is empty) |
+| `isNsfw` | (Optional, defaults to `false`) Flag to indicate that a source contains NSFW content. |
+
+### Extension call flow
+
+#### Popular manga
+
+a.k.a. the Browse source entry point in the app (invoked by tapping on the source name).
+
+- The app calls `getPopular` which should return a  JSON
+    ```bash
+    {
+    'list': array of {'url':string,'name':string,'link':string},
+     hasNextPage: Boolean
+    }
+    ```
+    - This method supports pagination. When user scrolls the manga  list and more results must be fetched, the app calls it again with increasing `page` values(starting with `page=1`). This continues while `hasNextPage` is passed as `true` and `list` is not empty.
+
+#### Latest manga
+
+a.k.a. the Latest source entry point in the app (invoked by tapping on the "Latest" button beside the source name).
+
+- Similar to popular manga, but should be fetching the latest entries from a source.
+
+#### Search manga
+
+- When the user searches inside the app, `search` will be called and the rest of the flow is similar to what happens with `getPopular`.
+- `getFilterList` will be called to get all filters and filter types.
+
+
+#### Manga Details
+
+- When user taps on an manga, `getDetail` will be called and the results will be cached.
+- `getDetail` is called to update an manga's details from when it was initialized earlier.
+    - `title` is a string containing title.
+    - `description` is a string containing description.
+    - `author` is a string containing author.
+    - `genre` contain array of all genres.
+    - `status` is an "integer" value.
+       You can refer to this example to see the correspondence:
+        ```bash
+          0=>"ongoing", 1=>"complete", 2=>"hiatus", 3=>"canceled", 4=>"publishingFinished", 5=>unknow
+        ```
+     
+    - `chapters` or `episodes` contain all of all manga chapters or anime episodes.
+    - `name` is a string containing a chapter name.
+    - `url` is a string containing a chapter url.
+    - `scanlator` is a string containing a chapter scanlator.
+    - `dateUpload` is a string containing date **expressed in millisecondsSinceEpoch**.
+        - If you don't pass `dateUpload` and leave it null, the app will use the default date instead, but it's recommended to always fill it if it's available.
+
+#### Chapter pages
+
+- When user opens an chapter, `getPageList` will be called and it will return an array of string or an array of map like `{ url:string,headers:map }` that are used by the reader.
+
+#### Episode Videos
+
+- When user opens an episode, `getVideoList` will be called and it will return a 
+   ```bash
+   array of {'url':string,'originalUrl':string,'quality':string}
+   ```
+
+ that are used by the player.
+
+## Example sources that can help you understand how to create your source
+
+- [Example](https://github.com/kodjodevf/mangayomi-extensions/blob/main/javascript/anime/src/de/aniworld.js)
+  of HTML parsing using HTML DOM selector.
+- [Example](https://github.com/kodjodevf/mangayomi-extensions/blob/main/javascript/anime/src/en/allanime.js)
+  of Json API usage.
+
+  
+## Some functions already available and usable
+
+
+### http client  
+
+Return Response
+```bash
+- Simple request
+
+const client = new Client();
+
+const res = await client.get("http://example.com");
+
+console.log(res.body);
+
+- With headers 
+
+const client = new Client();
+
+const res = await client.get("http://example.com",{"Referer": "http://example.com"});
+
+console.log(res.body);
+
+- With body
+
+const client = new Client();
+
+const res = await client.post("http://example.com",{"Referer": "http://example.com"},{'name':'test'});
+
+console.log(res.body);
+
+```
+
+### HTML DOM selector
+
+Example: 
+```bash
+const htmlString = ` 
+<html lang="en">
+<body>
+<div><a href='https://github.com/kodjodevf'>author</a></div>
+<div class="head">div head</div>
+<div class="container">
+    <table>
+        <tbody>
+          <tr>
+              <td id="td1" class="first1">1</td>
+              <td id="td2" class="first1">2</td>
+              <td id="td3" class="first2">3</td>
+              <td id="td4" class="first2 form">4</td>
+              <td id="td5" class="second1">one</td>
+              <td id="td6" class="second1">two</td>
+              <td id="td7" class="second2">three</td>
+              <td id="td8" class="second2">four</td>
+          </tr>
+        </tbody>
+    </table>
+</div>
+<div class="end">end</div>
+</body>
+</html>`
+
+const document = new Document(htmlString);
+console.log(document.selectFirst("a").attr("href")); // https://github.com/kodjodevf
+console.log(document.selectFirst("td").text); // 1
+
+```
+See [`dom_selector`](https://github.com/kodjodevf/mangayomi/blob/main/lib/eval/javascript/dom_selector.dart) to see available methods.
+
+
+### String utils
+- this.substringAfter(`string: pattern`)
+- this.substringAfterLast(`string: pattern`)
+- this.substringBefore(`string: pattern`)
+- this.substringBeforeLast(`string: pattern`)
+- this.substringBetween(`string: left`, `string: right`)
+
+### Crypto utils
+- unpackJs(`string: code`);
+- deobfuscateJsPassword(`string: inputString`)
+- encryptAESCryptoJS(`string: plainText`, `string: passphrase`)
+- decryptAESCryptoJS(`string: encrypted`, `string: passphrase`)
+- cryptoHandler(`string: text`, `string: iv`, `string: secretKeyString`, `Boolean: encrypt`)
+
+## Help
+
+If you need a help or have some questions, ask a community in our [Discord server](https://discord.com/invite/EjfBuYahsP).
