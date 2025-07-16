@@ -11,7 +11,7 @@ const mangayomiSources = [{
     "hasCloudflare": true,
     "sourceCodeUrl": "",
     "apiUrl": "",
-    "version": "1.0.8",
+    "version": "1.0.9",
     "isManga": false,
     "itemType": 1,
     "isFullData": false,
@@ -65,13 +65,6 @@ class DefaultExtension extends MProvider {
             console.error("Failed to parse API response from: " + url);
             return { list: [], hasNextPage: false };
         }
-    }
-
-    // 'getPopular' will always show the "Featured" category.
-    async getPopular(page) {
-        const offset = page > 1 ? 90 * (page - 1) : 0;
-        const url = `${this.source.baseUrl}/api/ts/roomlist/room-list/?limit=90&offset=${offset}`;
-        return await this._parseApiResponse(url);
     }
 
     // 'getLatestUpdates' will also show "Featured" as the default.
