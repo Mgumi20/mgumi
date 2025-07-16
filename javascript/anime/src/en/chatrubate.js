@@ -11,7 +11,7 @@ const mangayomiSources = [{
     "hasCloudflare": true,
     "sourceCodeUrl": "",
     "apiUrl": "",
-    "version": "1.1.2",
+    "version": "1.1.3",
     "isManga": false,
     "itemType": 1,
     "isFullData": false,
@@ -22,14 +22,12 @@ const mangayomiSources = [{
     "pkgPath": "anime/src/en/chatrubate.js"
 }];
 
-
 class DefaultExtension extends MProvider {
     constructor() {
         super();
         this.client = new Client();
     }
 
-    // Hide Popular tab, show only Latest tab
     get supportsPopular() {
         return false;
     }
@@ -42,7 +40,6 @@ class DefaultExtension extends MProvider {
         return new SharedPreferences().get(key);
     }
 
-    // This function creates the necessary headers to make requests look legitimate.
     getHeaders(referer = this.source.baseUrl) {
         return {
             "Referer": referer,
@@ -51,7 +48,6 @@ class DefaultExtension extends MProvider {
         };
     }
 
-    // Helper function to parse room lists from the API response.
     async _parseApiResponse(url) {
         try {
             const res = await this.client.get(url, this.getHeaders());
@@ -62,7 +58,7 @@ class DefaultExtension extends MProvider {
                     list.push({
                         name: room.username,
                         link: `${this.source.baseUrl}/${room.username}/`,
-                        imageUrl: room.image_url_360x270 || room.img // Use a more reliable image source if available
+                        imageUrl: room.image_url_360x270 || room.img
                     });
                 }
             }
@@ -71,29 +67,25 @@ class DefaultExtension extends MProvider {
                 hasNextPage: list.length > 0
             };
         } catch (e) {
-            // If the API fails, return an empty list instead of crashing.
             console.error("Failed to parse API response from: " + url);
             return { list: [], hasNextPage: false };
         }
     }
 
-    // Only provide Latest Updates, Popular is hidden
+    // Only provide Latest Updates
     async getLatestUpdates(page) {
         const offset = page > 1 ? 90 * (page - 1) : 0;
         const url = `${this.source.baseUrl}/api/ts/roomlist/room-list/?limit=90&offset=${offset}`;
         return await this._parseApiResponse(url);
     }
 
-    // Updated search function to use the new filters.
     async search(query, page, filters) {
         const offset = page > 1 ? 90 * (page - 1) : 0;
         let url = "";
 
         if (query) {
-            // If there's a search query, use the hashtag search.
             url = `${this.source.baseUrl}/api/ts/roomlist/room-list/?hashtags=${encodeURIComponent(query)}&limit=90&offset=${offset}`;
         } else {
-            // If there's no query, use the selected filter.
             const categoryFilter = filters[0];
             const selectedCategoryPath = categoryFilter.values[categoryFilter.state].value;
             url = `${this.source.baseUrl}${selectedCategoryPath}&offset=${offset}`;
@@ -102,7 +94,6 @@ class DefaultExtension extends MProvider {
         return await this._parseApiResponse(url);
     }
 
-    // Gets details for a specific room by scraping meta tags.
     async getDetail(url) {
         const res = await this.client.get(url, this.getHeaders(url));
         const doc = new Document(res.body);
@@ -111,10 +102,9 @@ class DefaultExtension extends MProvider {
         const imageUrl = doc.selectFirst("meta[property='og:image']")?.attr("content");
         const description = doc.selectFirst("meta[property='og:description']")?.attr("content")?.trim();
         
-        // A live stream is treated as a single "chapter".
         const chapters = [{
             name: "Live Stream",
-            url: url // Pass the room's URL to getVideoList.
+            url: url
         }];
 
         return {
@@ -126,20 +116,15 @@ class DefaultExtension extends MProvider {
         };
     }
     
-    // Unescapes unicode characters like \u0022 to ".
     _unescapeUnicode(str) {
         return str.replace(/\\u([\d\w]{4})/gi, (match, grp) => {
             return String.fromCharCode(parseInt(grp, 16));
         });
     }
 
-    // This is the most critical function. It finds the actual video stream URL.
     async getVideoList(url) {
         const res = await this.client.get(url, this.getHeaders(url));
         const html = res.body;
-        
-        // IMPROVEMENT: Use a more robust regex to extract the JSON data directly.
-        // This is less likely to break than splitting the string.
         const dossierMatch = html.match(/window\.initialRoomDossier\s*=\s*"(.*?)";/);
 
         if (!dossierMatch || !dossierMatch[1]) {
@@ -147,15 +132,11 @@ class DefaultExtension extends MProvider {
         }
         
         let jsonString = dossierMatch[1];
-        
-        // The string is double-escaped (e.g., \\u0022). We need to replace \\ with \ first.
         jsonString = jsonString.replace(/\\\\/g, '\\');
-        
         const unescapedJson = this._unescapeUnicode(jsonString);
 
         let roomData;
         try {
-            // IMPROVEMENT: Parse the full JSON to safely access properties.
             roomData = JSON.parse(unescapedJson);
         } catch (e) {
             console.error("Failed to parse room dossier JSON:", e);
@@ -164,13 +145,10 @@ class DefaultExtension extends MProvider {
         }
 
         const m3u8Url = roomData.hls_source;
-        
         if (!m3u8Url) {
             throw new Error("Could not find M3U8 stream URL (hls_source) in the room data.");
         }
 
-        // THIS IS THE FIX: Return the URL along with the necessary headers.
-        // The 'Referer' header is crucial for the video server to accept the request.
         return [{
             url: m3u8Url,
             originalUrl: m3u8Url,
@@ -179,7 +157,6 @@ class DefaultExtension extends MProvider {
         }];
     }
 
-    // A simple filter list based on main page categories.
     getFilterList() {
         const mainPageCategories = [
             { name: "Featured", value: "/api/ts/roomlist/room-list/?limit=90" },
@@ -198,12 +175,11 @@ class DefaultExtension extends MProvider {
         return [{
             type_name: "SelectFilter",
             name: "Category",
-            state: 0, // Default value is "Featured".
+            state: 0,
             values: filterValues
         }];
     }
     
-    // No specific preferences are needed for this source.
     getSourcePreferences() {
         return [];
     }
