@@ -11,7 +11,7 @@ const mangayomiSources = [{
     "hasCloudflare": true,
     "sourceCodeUrl": "",
     "apiUrl": "",
-    "version": "1.2.4",
+    "version": "1.2.5",
     "isManga": false,
     "itemType": 1,
     "isFullData": false,
@@ -122,7 +122,6 @@ class DefaultExtension extends MProvider {
     }
     
 async getVideoList(url) {
-    // الخطوة 1: جلب الصفحة للحصول على episode_id وXSRF-TOKEN
     const res = await this.client.get(url, this.getHeaders());
     const doc = new Document(res.body);
 
@@ -130,12 +129,25 @@ async getVideoList(url) {
     if (!episodeInput) throw new Error("Episode ID not found");
     const episodeId = episodeInput.attr("value");
 
-    // استخراج XSRF-TOKEN من الكوكيز
-    const tokenCookie = this.client.getCookies(url).find(c => c.name === "XSRF-TOKEN");
-    if (!tokenCookie) throw new Error("XSRF-TOKEN cookie not found");
-    const xsrfToken = decodeURIComponent(tokenCookie.value);
+    // استخراج XSRF-TOKEN من HTML (script[data-csrf] أو input[name=_token])
+    let xsrfToken = null;
 
-    // الخطوة 2: تجهيز البيانات والرؤوس لطلب POST
+    const csrfScript = doc.selectFirst('script[data-csrf]');
+    if (csrfScript) {
+        xsrfToken = csrfScript.attr('data-csrf');
+    }
+
+    if (!xsrfToken) {
+        const tokenInput = doc.selectFirst('input[name="_token"]');
+        if (tokenInput) {
+            xsrfToken = tokenInput.attr("value");
+        }
+    }
+
+    if (!xsrfToken) {
+        throw new Error("XSRF token not found in HTML");
+    }
+
     const headers = {
         ...this.getHeaders(url),
         "Content-Type": "application/json",
@@ -149,11 +161,10 @@ async getVideoList(url) {
     const json = JSON.parse(apiRes.body);
 
     const streamUrl = json.stream_url;
-    const domain = json.stream_domains[0]; // اختار دومين واحد أو استخدم random
+    const domain = json.stream_domains[0];
     const isLegacy = json.legacy !== 0;
 
     const baseVideoUrl = `${domain}/${streamUrl}`;
-
     const subtitles = [{
         file: `${baseVideoUrl}/eng.ass`,
         label: "English",
@@ -182,7 +193,6 @@ async getVideoList(url) {
         });
     }
 
-    // فرز الفيديوهات حسب الجودة المفضلة
     const prefQuality = this.getPreference("pref_quality_key") || "1080";
     return videoList.sort((a, b) => {
         if (a.quality.includes(prefQuality)) return -1;
@@ -190,6 +200,7 @@ async getVideoList(url) {
         return parseInt(b.quality) - parseInt(a.quality);
     });
 }
+
 
 
     getSourcePreferences() {
