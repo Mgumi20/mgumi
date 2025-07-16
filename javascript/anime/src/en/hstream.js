@@ -11,7 +11,7 @@ const mangayomiSources = [{
     "hasCloudflare": true,
     "sourceCodeUrl": "",
     "apiUrl": "",
-    "version": "1.1.5",
+    "version": "1.1.6",
     "isManga": false,
     "itemType": 1,
     "isFullData": false,
@@ -146,7 +146,8 @@ class DefaultExtension extends MProvider {
             streams.push({
                 url: videoUrl,
                 originalUrl: videoUrl,
-                quality: `${res}p`,
+                // FIX: تم تعديل اسم الجودة ليشمل رابط الفيديو الكامل
+                quality: `${res}p [${videoUrl}]`,
                 headers: this.getHeaders(url),
                 subtitles: subtitles,
             });
