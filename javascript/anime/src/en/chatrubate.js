@@ -11,7 +11,7 @@ const mangayomiSources = [{
     "hasCloudflare": true,
     "sourceCodeUrl": "",
     "apiUrl": "",
-    "version": "1.1.0",
+    "version": "1.1.1",
     "isManga": false,
     "itemType": 1,
     "isFullData": false,
@@ -72,11 +72,6 @@ class DefaultExtension extends MProvider {
         const offset = page > 1 ? 90 * (page - 1) : 0;
         const url = `${this.source.baseUrl}/api/ts/roomlist/room-list/?limit=90&offset=${offset}`;
         return await this._parseApiResponse(url);
-    }
-
-
-    get supportsPopular() {
-    return false;
     }
 
 
