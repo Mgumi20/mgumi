@@ -127,7 +127,7 @@ class DefaultExtension extends MProvider {
 
         const subtitleLinkElement = doc.selectFirst("a[href$=.ass]");
         if (!subtitleLinkElement) {
-            throw new Error("Could not find the subtitle link. Cloudflare might be blocking the request.");
+            throw new Error("Could not find the subtitle download link. The page structure may have changed.");
         }
 
         const subtitleUrl = subtitleLinkElement.getHref;
@@ -146,7 +146,8 @@ class DefaultExtension extends MProvider {
             streams.push({
                 url: videoUrl,
                 originalUrl: videoUrl,
-                quality: `${res}p`,
+                // FIX: تم تعديل اسم الجودة ليشمل رابط الفيديو الكامل
+                quality: `${res}p [${videoUrl}]`,
                 headers: this.getHeaders(url),
                 subtitles: subtitles,
             });
