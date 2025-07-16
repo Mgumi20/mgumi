@@ -11,7 +11,7 @@ const mangayomiSources = [{
     "hasCloudflare": true,
     "sourceCodeUrl": "",
     "apiUrl": "",
-    "version": "1.1.4",
+    "version": "1.1.5",
     "isManga": false,
     "itemType": 1,
     "isFullData": false,
@@ -85,51 +85,38 @@ class DefaultExtension extends MProvider {
         const res = await this.client.get(url, this.getHeaders());
         const doc = new Document(res.body);
 
-        // جلب البيانات الوصفية (metadata)
+        // استخدام محددات أكثر دقة بناءً على مثال Kotlin
         const infoContainer = doc.selectFirst("div.relative > div.justify-between > div");
-        const name = infoContainer.selectFirst("div > h1")?.text?.trim() || "No Title";
-        const author = infoContainer.selectFirst("div > a:nth-of-type(3)")?.text?.trim();
 
+        const name = infoContainer.selectFirst("div > h1")?.text?.trim() || "No Title";
+        const author = infoContainer.selectFirst("div > a:nth-of-type(3)")?.text?.trim(); // جلب اسم الفنان
+
+        // استخدام المحدد الصحيح للصورة والتأكد من أن الرابط كامل
         let imageUrl = doc.selectFirst("div.float-left > img.object-cover")?.getSrc;
         if (imageUrl && !imageUrl.startsWith("http")) {
             imageUrl = this.source.baseUrl + imageUrl;
         }
 
         const description = doc.selectFirst("div.relative > p.leading-tight")?.text;
-        const genres = doc.select("ul.list-none > li > a").map((it) => it.text);
+        const genres = doc.select("ul.list-none > li > a").map(it => it.text);
+
+        // تحديد الحالة بشكل ثابت كما في مثال Kotlin
         const status = 1; // 1 = Completed
 
-        // --- FIX START: تطبيق منطق episodeListParse ---
-        
-        // 1. استخراج تاريخ الرفع
-        const dateUploadStr = doc.selectFirst("a:has(i.fa-upload)")?.text?.trim();
-        // تحويل التاريخ إلى timestamp أو استخدام التاريخ الحالي كقيمة احتياطية
-        const dateUpload = dateUploadStr ? new Date(dateUploadStr).getTime().toString() : Date.now().toString();
-
-        // 2. استخراج رقم الحلقة من الرابط (URL)
-        const numMatch = url.match(/-(\d+)\/?$/); // تعبير نمطي (regex) للعثور على الرقم في نهاية الرابط
-        const num = numMatch ? numMatch[1] : "1"; // استخدام "1" كقيمة احتياطية
-
-        // 3. بناء اسم الحلقة الديناميكي
-        const episodeName = `Episode ${num}`;
-        
-        // 4. إنشاء قائمة الفصول بالبيانات الصحيحة
+        // هذا المصدر يعرض فيديو واحد، لذلك ننشئ "فصل" واحد لتشغيله
         const chapters = [{
-            name: episodeName, // استخدام الاسم الديناميكي
-            url: url,
-            dateUpload: dateUpload // إضافة تاريخ الرفع
+            name: "Watch",
+            url: url
         }];
-
-        // --- FIX END ---
 
         return {
             name,
-            author,
-            imageUrl,
-            description,
+            author,      // تمت إضافة الفنان
+            imageUrl,    // تم تحديث محدد الصورة
+            description, // تم تحديث محدد الوصف
             genre: genres,
-            status,
-            chapters, // استخدام قائمة الفصول المحدثة
+            status,      // تمت إضافة الحالة
+            chapters,
             link: url
         };
     }
