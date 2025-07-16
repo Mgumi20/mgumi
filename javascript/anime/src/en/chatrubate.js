@@ -11,7 +11,7 @@ const mangayomiSources = [{
     "hasCloudflare": true,
     "sourceCodeUrl": "",
     "apiUrl": "",
-    "version": "1.1.1",
+    "version": "1.1.2",
     "isManga": false,
     "itemType": 1,
     "isFullData": false,
@@ -22,10 +22,20 @@ const mangayomiSources = [{
     "pkgPath": "anime/src/en/chatrubate.js"
 }];
 
+
 class DefaultExtension extends MProvider {
     constructor() {
         super();
         this.client = new Client();
+    }
+
+    // Hide Popular tab, show only Latest tab
+    get supportsPopular() {
+        return false;
+    }
+
+    get supportsLatest() {
+        return true;
     }
 
     getPreference(key) {
@@ -67,14 +77,12 @@ class DefaultExtension extends MProvider {
         }
     }
 
-    // 'getLatestUpdates' will also show "Featured" as the default.
+    // Only provide Latest Updates, Popular is hidden
     async getLatestUpdates(page) {
         const offset = page > 1 ? 90 * (page - 1) : 0;
         const url = `${this.source.baseUrl}/api/ts/roomlist/room-list/?limit=90&offset=${offset}`;
         return await this._parseApiResponse(url);
     }
-
-
 
     // Updated search function to use the new filters.
     async search(query, page, filters) {
