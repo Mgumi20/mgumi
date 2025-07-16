@@ -11,7 +11,7 @@ const mangayomiSources = [{
     "hasCloudflare": true,
     "sourceCodeUrl": "",
     "apiUrl": "",
-    "version": "1.1.3",
+    "version": "1.1.4",
     "isManga": false,
     "itemType": 1,
     "isFullData": false,
@@ -81,11 +81,11 @@ class DefaultExtension extends MProvider {
         return { list, hasNextPage: false };
     }
     
-    // FIX: تم تحديث الدالة بالكامل لتستخدم المنطق الجديد لجلب الحلقات
     async getDetail(url) {
         const res = await this.client.get(url, this.getHeaders());
         const doc = new Document(res.body);
 
+        // جلب البيانات الوصفية (metadata)
         const infoContainer = doc.selectFirst("div.relative > div.justify-between > div");
         const name = infoContainer.selectFirst("div > h1")?.text?.trim() || "No Title";
         const author = infoContainer.selectFirst("div > a:nth-of-type(3)")?.text?.trim();
@@ -97,40 +97,41 @@ class DefaultExtension extends MProvider {
 
         const description = doc.selectFirst("div.relative > p.leading-tight")?.text;
         const genres = doc.select("ul.list-none > li > a").map((it) => it.text);
-        const status = 1;
+        const status = 1; // 1 = Completed
 
-        // تطبيق منطق جلب قائمة الحلقات الجديد
-        const chapters = [];
-        // استخدام المحدد الصحيح الذي قدمته
-        const episodeElements = doc.select('ul.inline-block.xl\\:block li');
+        // --- FIX START: تطبيق منطق episodeListParse ---
+        
+        // 1. استخراج تاريخ الرفع
+        const dateUploadStr = doc.selectFirst("a:has(i.fa-upload)")?.text?.trim();
+        // تحويل التاريخ إلى timestamp أو استخدام التاريخ الحالي كقيمة احتياطية
+        const dateUpload = dateUploadStr ? new Date(dateUploadStr).getTime().toString() : Date.now().toString();
 
-        if (episodeElements.length > 0) {
-            // الحالة الأولى: تم العثور على قائمة حلقات
-            for (const li of episodeElements) {
-                const linkElement = li.selectFirst('a');
-                const nameElement = li.selectFirst('p');
-                if (linkElement && nameElement) {
-                    chapters.push({
-                        name: nameElement.text,
-                        url: linkElement.getHref,
-                    });
-                }
-            }
-        } else {
-            // الحالة الثانية (الاحتياطية): لم يتم العثور على قائمة، نعود للمنطق القديم للفيديو الواحد
-            const dateUploadStr = doc.selectFirst("a:has(i.fa-upload)")?.text?.trim();
-            const dateUpload = dateUploadStr ? new Date(dateUploadStr).getTime().toString() : Date.now().toString();
-            const numMatch = url.match(/-(\d+)\/?$/);
-            const num = numMatch ? numMatch[1] : "1";
-            const episodeName = `Episode ${num}`;
-            chapters.push({
-                name: episodeName,
-                url: url,
-                dateUpload: dateUpload
-            });
-        }
+        // 2. استخراج رقم الحلقة من الرابط (URL)
+        const numMatch = url.match(/-(\d+)\/?$/); // تعبير نمطي (regex) للعثور على الرقم في نهاية الرابط
+        const num = numMatch ? numMatch[1] : "1"; // استخدام "1" كقيمة احتياطية
 
-        return { name, author, imageUrl, description, genre: genres, status, chapters, link: url };
+        // 3. بناء اسم الحلقة الديناميكي
+        const episodeName = `Episode ${num}`;
+        
+        // 4. إنشاء قائمة الفصول بالبيانات الصحيحة
+        const chapters = [{
+            name: episodeName, // استخدام الاسم الديناميكي
+            url: url,
+            dateUpload: dateUpload // إضافة تاريخ الرفع
+        }];
+
+        // --- FIX END ---
+
+        return {
+            name,
+            author,
+            imageUrl,
+            description,
+            genre: genres,
+            status,
+            chapters, // استخدام قائمة الفصول المحدثة
+            link: url
+        };
     }
     
     async getVideoList(url) {
