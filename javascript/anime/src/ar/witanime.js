@@ -6,7 +6,7 @@ const mangayomiSources = [{
     "iconUrl": "https://www.google.com/s2/favicons?sz=128&domain=https://witanime.com",
     "typeSource": "multi",
     "itemType": 1,
-    "version": "2.0.1",
+    "version": "2.0.2",
     "pkgPath": "anime/src/ar/witanime.js"
 }];
 
