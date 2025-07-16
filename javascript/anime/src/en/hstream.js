@@ -11,7 +11,7 @@ const mangayomiSources = [{
     "hasCloudflare": true,
     "sourceCodeUrl": "",
     "apiUrl": "",
-    "version": "1.4.0",
+    "version": "1.4.1",
     "isManga": false,
     "itemType": 1,
     "isFullData": false,
@@ -98,7 +98,7 @@ class DefaultExtension extends MProvider {
             imageUrl = this.source.baseUrl + imageUrl;
         }
 
-        const description = doc.selectFirst("a[href$=.ass]")?.getHref ?? "Subtitle URL not found.";
+        const description = doc.selectFirst("a[href]");
         const genres = doc.select("ul.list-none > li > a").map(it => it.text);
 
         // تحديد الحالة بشكل ثابت كما في مثال Kotlin
