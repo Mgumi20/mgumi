@@ -11,7 +11,7 @@ const mangayomiSources = [{
     "hasCloudflare": true,
     "sourceCodeUrl": "",
     "apiUrl": "",
-    "version": "1.3.1",
+    "version": "1.3.2",
     "isManga": false,
     "itemType": 1,
     "isFullData": false,
@@ -21,6 +21,7 @@ const mangayomiSources = [{
     "notes": "",
     "pkgPath": "anime/src/en/hstream.js"
 }];
+
 
 
 class DefaultExtension extends MProvider {
@@ -81,15 +82,18 @@ class DefaultExtension extends MProvider {
         const list = this._parseVideoList(doc);
         return { list, hasNextPage: false };
     }
-
+    
     async getDetail(url) {
         const res = await this.client.get(url, this.getHeaders());
         const doc = new Document(res.body);
 
+        // استخدام محددات أكثر دقة بناءً على مثال Kotlin
         const infoContainer = doc.selectFirst("div.relative > div.justify-between > div");
-        const name = infoContainer.selectFirst("div > h1")?.text?.trim() || "No Title";
-        const author = infoContainer.selectFirst("div > a:nth-of-type(3)")?.text?.trim();
 
+        const name = infoContainer.selectFirst("div > h1")?.text?.trim() || "No Title";
+        const author = infoContainer.selectFirst("div > a:nth-of-type(3)")?.text?.trim(); // جلب اسم الفنان
+
+        // استخدام المحدد الصحيح للصورة والتأكد من أن الرابط كامل
         let imageUrl = doc.selectFirst("div.float-left > img.object-cover")?.getSrc;
         if (imageUrl && !imageUrl.startsWith("http")) {
             imageUrl = this.source.baseUrl + imageUrl;
@@ -97,100 +101,64 @@ class DefaultExtension extends MProvider {
 
         const description = doc.selectFirst("div.relative > p.leading-tight")?.text;
         const genres = doc.select("ul.list-none > li > a").map(it => it.text);
-        const status = 1; // Completed
 
-        // --- New logic to extract data for the API call ---
-        const episodeId = doc.selectFirst("input#e_id")?.attr("value");
-        const csrfToken = doc.selectFirst("script[data-csrf]")?.attr("data-csrf");
+        // تحديد الحالة بشكل ثابت كما في مثال Kotlin
+        const status = 1; // 1 = Completed
 
-        if (!episodeId || !csrfToken) {
-            throw new Error("Could not extract required tokens from the page. The page structure may have changed.");
-        }
-        
-        // Pass necessary data to getVideoList via the chapter URL
-        const chapterUrl = JSON.stringify({
-            episodeId,
-            csrfToken,
-            url // The original URL for the Referer header
-        });
-
+        // هذا المصدر يعرض فيديو واحد، لذلك ننشئ "فصل" واحد لتشغيله
         const chapters = [{
             name: "Watch",
-            url: chapterUrl
+            url: url
         }];
 
         return {
             name,
-            author,
-            imageUrl,
-            description,
+            author,      // تمت إضافة الفنان
+            imageUrl,    // تم تحديث محدد الصورة
+            description, // تم تحديث محدد الوصف
             genre: genres,
-            status,
+            status,      // تمت إضافة الحالة
             chapters,
             link: url
         };
     }
     
-    // Helper function to determine the correct video path
-    _getVideoUrlPath(isLegacy, resolution) {
-        if (isLegacy) {
-            return (resolution === "720") ? "/x264.720p.mp4" : `/av1.${resolution}.webm`;
-        } else {
-            return `/${resolution}/manifest.mpd`;
-        }
-    }
-    
     async getVideoList(url) {
-        // Parse the JSON string passed from getDetail
-        const { episodeId, csrfToken, url: refererUrl } = JSON.parse(url);
+        const res = await this.client.get(url, this.getHeaders());
+        const doc = new Document(res.body);
 
-        const apiUrl = `${this.source.baseUrl}/player/api`;
+        const subtitleLinkElement = doc.selectFirst("a[href$=.ass]");
+        if (!subtitleLinkElement) {
+            throw new Error("Could not find the subtitle download link. The page structure may have changed.");
+        }
 
-        // Prepare headers for the API request
-        const apiHeaders = this.getHeaders(refererUrl);
-        apiHeaders["X-Requested-With"] = "XMLHttpRequest";
-        apiHeaders["X-XSRF-TOKEN"] = csrfToken;
-        apiHeaders["Content-Type"] = "application/json";
+        const subtitleUrl = subtitleLinkElement.getHref;
+        const streamBaseUrl = subtitleUrl.substring(0, subtitleUrl.lastIndexOf('/') + 1);
 
-        // Prepare the request body
-        const requestBody = { "episode_id": episodeId };
+        const streams = [];
+        const resolutions = ["720", "1080", "2160"];
 
-        // Make the authenticated POST request
-        const res = await this.client.post(apiUrl, apiHeaders, requestBody);
-        const data = JSON.parse(res.body);
-
-        // Select a random stream domain
-        const urlBase = data.stream_domains[Math.floor(Math.random() * data.stream_domains.length)] + "/" + data.stream_url;
-        
         const subtitles = [{
-            file: `${urlBase}/eng.ass`,
+            file: subtitleUrl,
             label: "English",
         }];
-        
-        // Determine available resolutions
-        const resolutions = ["720", "1080"];
-        if (data.resolution === "4k") {
-            resolutions.push("2160");
-        }
 
-        const streams = resolutions.map(resolution => {
-            const videoPath = this._getVideoUrlPath(data.legacy !== 0, resolution);
-            const videoUrl = urlBase + videoPath;
-            return {
+        for (const res of resolutions) {
+            const videoUrl = `${streamBaseUrl}${res}/manifest.mpd`;
+            streams.push({
                 url: videoUrl,
                 originalUrl: videoUrl,
-                quality: `${resolution}p`,
-                headers: this.getHeaders(refererUrl),
-                subtitles: subtitles
-            };
-        });
+                // FIX: تم تعديل اسم الجودة ليشمل رابط الفيديو الكامل
+                quality: `${res}p [${videoUrl}]`,
+                headers: this.getHeaders(url),
+                subtitles: subtitles,
+            });
+        }
         
-        // Sort streams by preferred quality
         const prefQuality = this.getPreference("pref_quality_key") || "1080";
         const sortedStreams = streams.sort((a, b) => {
             if (a.quality.includes(prefQuality)) return -1;
             if (b.quality.includes(prefQuality)) return 1;
-            // Fallback to sorting by resolution descending
             return parseInt(b.quality) - parseInt(a.quality);
         });
 
