@@ -11,7 +11,7 @@ const mangayomiSources = [{
     "hasCloudflare": true,
     "sourceCodeUrl": "",
     "apiUrl": "",
-    "version": "1.3.4",
+    "version": "1.3.5",
     "isManga": false,
     "itemType": 1,
     "isFullData": false,
@@ -21,6 +21,7 @@ const mangayomiSources = [{
     "notes": "",
     "pkgPath": "anime/src/en/hstream.js"
 }];
+
 
 
 
@@ -87,12 +88,13 @@ class DefaultExtension extends MProvider {
         const res = await this.client.get(url, this.getHeaders());
         const doc = new Document(res.body);
 
+        // استخدام محددات أكثر دقة بناءً على مثال Kotlin
         const infoContainer = doc.selectFirst("div.relative > div.justify-between > div");
-        if (!infoContainer) throw new Error("Could not find info container. Page structure may have changed.");
 
         const name = infoContainer.selectFirst("div > h1")?.text?.trim() || "No Title";
-        const author = infoContainer.selectFirst("div > a:nth-of-type(3)")?.text?.trim();
+        const author = infoContainer.selectFirst("div > a:nth-of-type(3)")?.text?.trim(); // جلب اسم الفنان
 
+        // استخدام المحدد الصحيح للصورة والتأكد من أن الرابط كامل
         let imageUrl = doc.selectFirst("div.float-left > img.object-cover")?.getSrc;
         if (imageUrl && !imageUrl.startsWith("http")) {
             imageUrl = this.source.baseUrl + imageUrl;
@@ -100,8 +102,11 @@ class DefaultExtension extends MProvider {
 
         const description = doc.selectFirst("div.relative > p.leading-tight")?.text;
         const genres = doc.select("ul.list-none > li > a").map(it => it.text);
-        const status = 1; // 1 = Completed for this source
 
+        // تحديد الحالة بشكل ثابت كما في مثال Kotlin
+        const status = 1; // 1 = Completed
+
+        // هذا المصدر يعرض فيديو واحد، لذلك ننشئ "فصل" واحد لتشغيله
         const chapters = [{
             name: "Watch",
             url: url
@@ -109,17 +114,57 @@ class DefaultExtension extends MProvider {
 
         return {
             name,
-            author,
-            imageUrl,
-            description,
+            author,      // تمت إضافة الفنان
+            imageUrl,    // تم تحديث محدد الصورة
+            description, // تم تحديث محدد الوصف
             genre: genres,
-            status,
+            status,      // تمت إضافة الحالة
             chapters,
             link: url
         };
     }
     
+    async getVideoList(url) {
+        const res = await this.client.get(url, this.getHeaders());
+        const doc = new Document(res.body);
 
+        const subtitleLinkElement = doc.selectFirst("a[href$=.ass]");
+        if (!subtitleLinkElement) {
+            throw new Error("Could not find the subtitle download link. The page structure may have changed.");
+        }
+
+        const subtitleUrl = subtitleLinkElement.getHref;
+        const streamBaseUrl = subtitleUrl.substring(0, subtitleUrl.lastIndexOf('/') + 1);
+
+        const streams = [];
+        const resolutions = ["720", "1080", "2160"];
+
+        const subtitles = [{
+            file: subtitleUrl,
+            label: "English",
+        }];
+
+        for (const res of resolutions) {
+            const videoUrl = `${streamBaseUrl}${res}/manifest.mpd`;
+            streams.push({
+                url: videoUrl,
+                originalUrl: videoUrl,
+                // FIX: تم تعديل اسم الجودة ليشمل رابط الفيديو الكامل
+                quality: `${res}p [${videoUrl}]`,
+                headers: this.getHeaders(url),
+                subtitles: subtitles,
+            });
+        }
+        
+        const prefQuality = this.getPreference("pref_quality_key") || "1080";
+        const sortedStreams = streams.sort((a, b) => {
+            if (a.quality.includes(prefQuality)) return -1;
+            if (b.quality.includes(prefQuality)) return 1;
+            return parseInt(b.quality) - parseInt(a.quality);
+        });
+
+        return sortedStreams;
+    }
 
     getSourcePreferences() {
         return [{
