@@ -11,7 +11,7 @@ const mangayomiSources = [{
     "hasCloudflare": true,
     "sourceCodeUrl": "",
     "apiUrl": "",
-    "version": "1.2.6",
+    "version": "1.2.7",
     "isManga": false,
     "itemType": 1,
     "isFullData": false,
@@ -21,7 +21,6 @@ const mangayomiSources = [{
     "notes": "",
     "pkgPath": "anime/src/en/hstream.js"
 }];
-
 
 class DefaultExtension extends MProvider {
     constructor() {
@@ -165,8 +164,8 @@ class DefaultExtension extends MProvider {
                 url: videoUrl,
                 originalUrl: videoUrl,
                 quality: `${res}p`,
-                headers,
-                subtitles,
+                headers: headers, // FIXED: now headers is an object, not a string
+                subtitles: subtitles,
             });
         }
 
