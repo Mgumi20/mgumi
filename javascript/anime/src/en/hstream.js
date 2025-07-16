@@ -11,7 +11,7 @@ const mangayomiSources = [{
     "hasCloudflare": true,
     "sourceCodeUrl": "",
     "apiUrl": "",
-    "version": "1.2.2",
+    "version": "1.2.3",
     "isManga": false,
     "itemType": 1,
     "isFullData": false,
@@ -122,70 +122,72 @@ class DefaultExtension extends MProvider {
     }
     
 async getVideoList(url) {
-    // Fetch the episode page
+    // Fetch episode page and parse
     const res = await this.client.get(url, this.getHeaders());
     const doc = new Document(res.body);
 
-    // Try selecting all <a> elements and finding the one with .ass in href
-    // This works even if selectFirst("a[href$=.ass]") fails
-    const links = doc.selectAll("a");
-    let subtitleLinkElement = null;
-    for (const link of links) {
-        // Try to get href using getHref() or getAttribute('href')
-        let href = null;
-        if (typeof link.getHref === 'function') {
-            href = link.getHref();
-        } else if (typeof link.getAttribute === 'function') {
-            href = link.getAttribute('href');
-        }
-        if (href && href.endsWith('.ass')) {
-            subtitleLinkElement = link;
-            break;
-        }
-    }
-    if (!subtitleLinkElement) {
-        throw new Error("Could not find the subtitle download link. The page structure may have changed.");
+    // 1. Get cookie XSRF-TOKEN
+    const xsrfCookie = this.client.cookieJar.cookies.find(c => c.name === "XSRF-TOKEN");
+    const xsrfToken = xsrfCookie ? decodeURIComponent(xsrfCookie.value) : null;
+
+    // 2. Get episode ID from HTML
+    const episodeId = doc.selectFirst("input#e_id")?.attr("value");
+    if (!xsrfToken || !episodeId) {
+        throw new Error("Missing XSRF token or episode ID");
     }
 
-    // Get the subtitle URL
-    const subtitleUrl = typeof subtitleLinkElement.getHref === 'function'
-        ? subtitleLinkElement.getHref()
-        : subtitleLinkElement.getAttribute('href');
+    // 3. Prepare new headers for POST
+    const newHeaders = {
+        ...this.getHeaders(url),
+        "X-Requested-With": "XMLHttpRequest",
+        "X-XSRF-TOKEN": xsrfToken,
+    };
 
-    // Get stream base URL
-    const streamBaseUrl = subtitleUrl.substring(0, subtitleUrl.lastIndexOf('/') + 1);
+    // 4. Prepare and send POST to /player/api
+    const body = JSON.stringify({ episode_id: episodeId });
+    const apiRes = await this.client.post(
+        `${this.source.baseUrl}/player/api`,
+        body,
+        {
+            ...newHeaders,
+            "Content-Type": "application/json"
+        }
+    );
+    // Assume apiRes.body is JSON
+    const data = JSON.parse(apiRes.body);
 
-    // Subtitle object
-    const subtitles = [{
-        file: subtitleUrl,
-        label: "English",
+    // 5. Build base stream URL
+    const urlBase = `${data.stream_domains[Math.floor(Math.random() * data.stream_domains.length)]}/${data.stream_url}`;
+    const subtitleList = [{
+        file: `${urlBase}/eng.ass`,
+        label: "English"
     }];
 
-    // Video qualities to attempt
-    const resolutions = ["720", "1080", "2160"];
-    const streams = [];
+    // 6. Build resolutions list
+    const resolutions = ["720", "1080"];
+    if (data.resolution === "4k") resolutions.push("2160");
 
-    for (const res of resolutions) {
-        const videoUrl = `${streamBaseUrl}${res}/manifest.mpd`;
-        streams.push({
-            url: videoUrl,
-            originalUrl: videoUrl,
-            quality: `${res}p [${videoUrl}]`,
-            headers: this.getHeaders(url),
-            subtitles: subtitles,
-        });
+    // 7. Helper for legacy/regular URLs
+    function getVideoUrlPath(isLegacy, resolution) {
+        if (isLegacy) {
+            if (resolution === "720") return "/x264.720p.mp4";
+            else return `/av1.${resolution}.webm`;
+        } else {
+            return `/${resolution}/manifest.mpd`;
+        }
     }
 
-    // Preferred quality sorting
-    const prefQuality = this.getPreference("pref_quality_key") || "1080";
-    const sortedStreams = streams.sort((a, b) => {
-        if (a.quality.includes(prefQuality)) return -1;
-        if (b.quality.includes(prefQuality)) return 1;
-        // Compare numeric qualities
-        return parseInt(b.quality) - parseInt(a.quality);
+    // 8. Build stream objects
+    return resolutions.map(resolution => {
+        const videoUrl = urlBase + getVideoUrlPath(data.legacy !== 0, resolution);
+        return {
+            url: videoUrl,
+            originalUrl: videoUrl,
+            quality: `${resolution}p [${videoUrl}]`,
+            headers: newHeaders,
+            subtitles: subtitleList
+        };
     });
-
-    return sortedStreams;
 }
 
     getSourcePreferences() {
