@@ -74,11 +74,11 @@ class DefaultExtension extends MProvider {
         return await this._parseApiResponse(url);
     }
 
-    
-    // ترجع فارغ علشان ما تظهر شي في قسم Popular
-    async getPopular(page) {
-    return { list: [], hasNextPage: false };
+
+    get supportsPopular() {
+    return false;
     }
+
 
 
     // Updated search function to use the new filters.
