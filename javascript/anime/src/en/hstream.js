@@ -11,7 +11,7 @@ const mangayomiSources = [{
     "hasCloudflare": true,
     "sourceCodeUrl": "",
     "apiUrl": "",
-    "version": "1.2.3",
+    "version": "1.2.4",
     "isManga": false,
     "itemType": 1,
     "isFullData": false,
@@ -122,73 +122,75 @@ class DefaultExtension extends MProvider {
     }
     
 async getVideoList(url) {
-    // Fetch episode page and parse
+    // الخطوة 1: جلب الصفحة للحصول على episode_id وXSRF-TOKEN
     const res = await this.client.get(url, this.getHeaders());
     const doc = new Document(res.body);
 
-    // 1. Get cookie XSRF-TOKEN
-    const xsrfCookie = this.client.cookieJar.cookies.find(c => c.name === "XSRF-TOKEN");
-    const xsrfToken = xsrfCookie ? decodeURIComponent(xsrfCookie.value) : null;
+    const episodeInput = doc.selectFirst("input#e_id");
+    if (!episodeInput) throw new Error("Episode ID not found");
+    const episodeId = episodeInput.attr("value");
 
-    // 2. Get episode ID from HTML
-    const episodeId = doc.selectFirst("input#e_id")?.attr("value");
-    if (!xsrfToken || !episodeId) {
-        throw new Error("Missing XSRF token or episode ID");
-    }
+    // استخراج XSRF-TOKEN من الكوكيز
+    const tokenCookie = this.client.getCookies(url).find(c => c.name === "XSRF-TOKEN");
+    if (!tokenCookie) throw new Error("XSRF-TOKEN cookie not found");
+    const xsrfToken = decodeURIComponent(tokenCookie.value);
 
-    // 3. Prepare new headers for POST
-    const newHeaders = {
+    // الخطوة 2: تجهيز البيانات والرؤوس لطلب POST
+    const headers = {
         ...this.getHeaders(url),
+        "Content-Type": "application/json",
         "X-Requested-With": "XMLHttpRequest",
-        "X-XSRF-TOKEN": xsrfToken,
+        "X-XSRF-TOKEN": xsrfToken
     };
 
-    // 4. Prepare and send POST to /player/api
     const body = JSON.stringify({ episode_id: episodeId });
-    const apiRes = await this.client.post(
-        `${this.source.baseUrl}/player/api`,
-        body,
-        {
-            ...newHeaders,
-            "Content-Type": "application/json"
-        }
-    );
-    // Assume apiRes.body is JSON
-    const data = JSON.parse(apiRes.body);
 
-    // 5. Build base stream URL
-    const urlBase = `${data.stream_domains[Math.floor(Math.random() * data.stream_domains.length)]}/${data.stream_url}`;
-    const subtitleList = [{
-        file: `${urlBase}/eng.ass`,
-        label: "English"
+    const apiRes = await this.client.post(`${this.source.baseUrl}/player/api`, body, headers);
+    const json = JSON.parse(apiRes.body);
+
+    const streamUrl = json.stream_url;
+    const domain = json.stream_domains[0]; // اختار دومين واحد أو استخدم random
+    const isLegacy = json.legacy !== 0;
+
+    const baseVideoUrl = `${domain}/${streamUrl}`;
+
+    const subtitles = [{
+        file: `${baseVideoUrl}/eng.ass`,
+        label: "English",
     }];
 
-    // 6. Build resolutions list
     const resolutions = ["720", "1080"];
-    if (data.resolution === "4k") resolutions.push("2160");
+    if (json.resolution === "4k") resolutions.push("2160");
 
-    // 7. Helper for legacy/regular URLs
-    function getVideoUrlPath(isLegacy, resolution) {
+    const videoList = [];
+
+    for (const res of resolutions) {
+        let videoPath = "";
         if (isLegacy) {
-            if (resolution === "720") return "/x264.720p.mp4";
-            else return `/av1.${resolution}.webm`;
+            videoPath = (res === "720") ? "/x264.720p.mp4" : `/av1.${res}.webm`;
         } else {
-            return `/${resolution}/manifest.mpd`;
+            videoPath = `/${res}/manifest.mpd`;
         }
-    }
 
-    // 8. Build stream objects
-    return resolutions.map(resolution => {
-        const videoUrl = urlBase + getVideoUrlPath(data.legacy !== 0, resolution);
-        return {
+        const videoUrl = baseVideoUrl + videoPath;
+        videoList.push({
             url: videoUrl,
             originalUrl: videoUrl,
-            quality: `${resolution}p [${videoUrl}]`,
-            headers: newHeaders,
-            subtitles: subtitleList
-        };
+            quality: `${res}p`,
+            headers,
+            subtitles,
+        });
+    }
+
+    // فرز الفيديوهات حسب الجودة المفضلة
+    const prefQuality = this.getPreference("pref_quality_key") || "1080";
+    return videoList.sort((a, b) => {
+        if (a.quality.includes(prefQuality)) return -1;
+        if (b.quality.includes(prefQuality)) return 1;
+        return parseInt(b.quality) - parseInt(a.quality);
     });
 }
+
 
     getSourcePreferences() {
         return [{
