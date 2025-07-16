@@ -11,7 +11,7 @@ const mangayomiSources = [{
     "hasCloudflare": true,
     "sourceCodeUrl": "",
     "apiUrl": "",
-    "version": "1.3.2",
+    "version": "1.3.3",
     "isManga": false,
     "itemType": 1,
     "isFullData": false,
@@ -87,13 +87,12 @@ class DefaultExtension extends MProvider {
         const res = await this.client.get(url, this.getHeaders());
         const doc = new Document(res.body);
 
-        // استخدام محددات أكثر دقة بناءً على مثال Kotlin
         const infoContainer = doc.selectFirst("div.relative > div.justify-between > div");
+        if (!infoContainer) throw new Error("Could not find info container. Page structure may have changed.");
 
         const name = infoContainer.selectFirst("div > h1")?.text?.trim() || "No Title";
-        const author = infoContainer.selectFirst("div > a:nth-of-type(3)")?.text?.trim(); // جلب اسم الفنان
+        const author = infoContainer.selectFirst("div > a:nth-of-type(3)")?.text?.trim();
 
-        // استخدام المحدد الصحيح للصورة والتأكد من أن الرابط كامل
         let imageUrl = doc.selectFirst("div.float-left > img.object-cover")?.getSrc;
         if (imageUrl && !imageUrl.startsWith("http")) {
             imageUrl = this.source.baseUrl + imageUrl;
@@ -101,11 +100,8 @@ class DefaultExtension extends MProvider {
 
         const description = doc.selectFirst("div.relative > p.leading-tight")?.text;
         const genres = doc.select("ul.list-none > li > a").map(it => it.text);
+        const status = 1; // 1 = Completed for this source
 
-        // تحديد الحالة بشكل ثابت كما في مثال Kotlin
-        const status = 1; // 1 = Completed
-
-        // هذا المصدر يعرض فيديو واحد، لذلك ننشئ "فصل" واحد لتشغيله
         const chapters = [{
             name: "Watch",
             url: url
@@ -113,57 +109,81 @@ class DefaultExtension extends MProvider {
 
         return {
             name,
-            author,      // تمت إضافة الفنان
-            imageUrl,    // تم تحديث محدد الصورة
-            description, // تم تحديث محدد الوصف
+            author,
+            imageUrl,
+            description,
             genre: genres,
-            status,      // تمت إضافة الحالة
+            status,
             chapters,
             link: url
         };
     }
     
+    // START OF IMPROVED METHOD
     async getVideoList(url) {
         const res = await this.client.get(url, this.getHeaders());
         const doc = new Document(res.body);
 
+        // 1. Find the subtitle link. This is the key to finding everything else.
         const subtitleLinkElement = doc.selectFirst("a[href$=.ass]");
         if (!subtitleLinkElement) {
             throw new Error("Could not find the subtitle download link. The page structure may have changed.");
         }
-
         const subtitleUrl = subtitleLinkElement.getHref;
-        const streamBaseUrl = subtitleUrl.substring(0, subtitleUrl.lastIndexOf('/') + 1);
 
-        const streams = [];
-        const resolutions = ["720", "1080", "2160"];
-
+        // The subtitle object that will be attached to every valid video stream.
         const subtitles = [{
             file: subtitleUrl,
             label: "English",
         }];
+        
+        // 2. Derive the base URL for video content from the subtitle URL.
+        const streamBaseUrl = subtitleUrl.substring(0, subtitleUrl.lastIndexOf('/') + 1);
+        const resolutions = ["720", "1080", "2160"];
 
-        for (const res of resolutions) {
+        // 3. Create a promise for each resolution check. This will run them in parallel.
+        const streamPromises = resolutions.map(async (res) => {
             const videoUrl = `${streamBaseUrl}${res}/manifest.mpd`;
-            streams.push({
-                url: videoUrl,
-                originalUrl: videoUrl,
-                // FIX: تم تعديل اسم الجودة ليشمل رابط الفيديو الكامل
-                quality: `${res}p [${videoUrl}]`,
-                headers: this.getHeaders(url),
-                subtitles: subtitles,
-            });
+            try {
+                // Check if the manifest file actually exists.
+                const response = await this.client.get(videoUrl, this.getHeaders(url));
+                if (response.statusCode === 200) {
+                    // If it exists, return a complete stream object,
+                    // combining the video URL with the subtitle URL we found earlier.
+                    return {
+                        url: videoUrl,
+                        originalUrl: videoUrl,
+                        quality: `${res}p`, // Use a cleaner quality label.
+                        headers: this.getHeaders(url),
+                        subtitles: subtitles, // Attach the subtitles here.
+                    };
+                }
+            } catch (e) {
+                // Ignore errors (like 404 Not Found), as it just means this quality isn't available.
+            }
+            return null; // Return null if the stream doesn't exist.
+        });
+
+        // 4. Wait for all checks to complete and filter out the ones that failed (returned null).
+        const checkedStreams = await Promise.all(streamPromises);
+        const streams = checkedStreams.filter(stream => stream !== null);
+
+        if (streams.length === 0) {
+            throw new Error("No valid video streams were found for any resolution.");
         }
         
+        // 5. Sort the final, valid streams based on user preference.
         const prefQuality = this.getPreference("pref_quality_key") || "1080";
         const sortedStreams = streams.sort((a, b) => {
             if (a.quality.includes(prefQuality)) return -1;
             if (b.quality.includes(prefQuality)) return 1;
+            // Fallback to sorting by highest quality first.
             return parseInt(b.quality) - parseInt(a.quality);
         });
 
         return sortedStreams;
     }
+    // END OF IMPROVED METHOD
 
     getSourcePreferences() {
         return [{
