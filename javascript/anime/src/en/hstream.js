@@ -11,7 +11,7 @@ const mangayomiSources = [{
     "hasCloudflare": true,
     "sourceCodeUrl": "",
     "apiUrl": "",
-    "version": "1.3.6",
+    "version": "1.3.7",
     "isManga": false,
     "itemType": 1,
     "isFullData": false,
@@ -89,7 +89,7 @@ class DefaultExtension extends MProvider {
         // استخدام محددات أكثر دقة بناءً على مثال Kotlin
         const infoContainer = doc.selectFirst("div.relative > div.justify-between > div");
 
-        const name = infoContainer.selectFirst("div > h1")?.text?.trim() || "No Title";
+        const name = doc.selectFirst("div.justify-around > a[href$=.ass]");
         const author = infoContainer.selectFirst("div > a:nth-of-type(3)")?.text?.trim(); // جلب اسم الفنان
 
         // استخدام المحدد الصحيح للصورة والتأكد من أن الرابط كامل
