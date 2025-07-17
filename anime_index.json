@@ -374,6 +374,28 @@
         "notes": ""
     },
     {
+        "name": "Anime4Up",
+        "id": 402283993,
+        "baseUrl": "https://anime4up.rest",
+        "lang": "ar",
+        "typeSource": "multi",
+        "iconUrl": "https://www.google.com/s2/favicons?sz=128&domain=https://anime4up.rest",
+        "dateFormat": "",
+        "dateFormatLocale": "",
+        "isNsfw": false,
+        "hasCloudflare": false,
+        "sourceCodeUrl": "https://raw.githubusercontent.com/Mgumi20/mgumi/refs/heads/main/javascript/anime/src/ar/anime4up.js",
+        "apiUrl": "",
+        "version": "1.0.2",
+        "isManga": false,
+        "itemType": 1,
+        "isFullData": false,
+        "appMinVerReq": "0.5.0",
+        "additionalParams": "",
+        "sourceCodeLanguage": 1,
+        "notes": ""
+    },
+    {
         "name": "WitAnime",
         "id": 984372845,
         "baseUrl": "https://witanime.com",
