@@ -11,7 +11,7 @@ const mangayomiSources = [{
     "hasCloudflare": true,
     "sourceCodeUrl": "",
     "apiUrl": "",
-    "version": "1.1.7",
+    "version": "1.1.8",
     "isManga": false,
     "itemType": 1,
     "isFullData": false,
@@ -33,7 +33,6 @@ class DefaultExtension extends MProvider {
         return new SharedPreferences().get(key);
     }
 
-    // This function creates the necessary headers to make requests look legitimate.
     getHeaders(referer = this.source.baseUrl) {
         return {
             "Referer": referer,
@@ -42,7 +41,6 @@ class DefaultExtension extends MProvider {
         };
     }
 
-    // Helper function to parse room lists from the API response.
     async _parseApiResponse(url) {
         try {
             const res = await this.client.get(url, this.getHeaders());
@@ -67,21 +65,18 @@ class DefaultExtension extends MProvider {
         }
     }
 
-    // 'getPopular' will always show the "Featured" category.
     async getPopular(page) {
         const offset = page > 1 ? 90 * (page - 1) : 0;
         const url = `${this.source.baseUrl}/api/ts/roomlist/room-list/?limit=90&offset=${offset}`;
         return await this._parseApiResponse(url);
     }
 
-    // 'getLatestUpdates' will show female rooms by default.
     async getLatestUpdates(page) {
         const offset = page > 1 ? 90 * (page - 1) : 0;
         const url = `${this.source.baseUrl}/api/ts/roomlist/room-list/?genders=f&limit=90&offset=${offset}`;
         return await this._parseApiResponse(url);
     }
 
-    // Updated search function to use the new filters.
     async search(query, page, filters) {
         const offset = page > 1 ? 90 * (page - 1) : 0;
         let url = "";
@@ -97,7 +92,6 @@ class DefaultExtension extends MProvider {
         return await this._parseApiResponse(url);
     }
 
-    // Gets details for a specific room by scraping meta tags.
     async getDetail(url) {
         const res = await this.client.get(url, this.getHeaders(url));
         const doc = new Document(res.body);
@@ -126,16 +120,6 @@ class DefaultExtension extends MProvider {
         });
     }
 
-    // ====================================================================================
-    // START: NEW AND UPDATED FUNCTIONS FOR EXTRACTING ALL VIDEO QUALITIES
-    // ====================================================================================
-
-    /**
-     * Helper function to fetch a master M3U8 playlist and parse it to find all available quality streams.
-     * @param {string} masterUrl - The URL of the master M3U8 playlist.
-     * @param {object} headers - The necessary HTTP headers (especially the 'Referer').
-     * @returns {Promise<Array>} - A promise that resolves to an array of video stream objects.
-     */
     async _extractQualitiesFromM3U8(masterUrl, headers) {
         const qualities = [];
         try {
@@ -173,11 +157,6 @@ class DefaultExtension extends MProvider {
         });
     }
 
-    /**
-     * This is the most critical function. It finds the master stream URL and then extracts all available qualities.
-     * @param {string} url - The URL of the Chaturbate room.
-     * @returns {Promise<Array>} - A promise that resolves to a list of all available video streams.
-     */
     async getVideoList(url) {
         const res = await this.client.get(url, this.getHeaders(url));
         const html = res.body;
@@ -217,17 +196,31 @@ class DefaultExtension extends MProvider {
 
         const individualQualities = await this._extractQualitiesFromM3U8(masterM3u8Url, streamHeaders);
         
+        // Combine the "Auto" option with all the specific qualities found
         const allStreams = [masterStream, ...individualQualities];
+        
+        // --- NEW LOGIC TO APPLY THE QUALITY PREFERENCE ---
+        const preferredQuality = this.getPreference('preferred_quality') || 'auto';
+        
+        // If the user's choice is "auto", we don't need to do anything.
+        if (preferredQuality === 'auto') {
+            return allStreams;
+        }
+        
+        // Find the index of the stream that matches the user's preference (e.g., "720p")
+        const foundIndex = allStreams.findIndex(stream => stream.quality.includes(preferredQuality));
+        
+        // If a matching quality is found, move it to the top of the list so it becomes the default.
+        if (foundIndex > -1) {
+            // Remove the preferred stream from its current position
+            const [preferredStream] = allStreams.splice(foundIndex, 1);
+            // Add it to the very beginning of the array
+            allStreams.unshift(preferredStream);
+        }
 
         return allStreams;
     }
 
-    // ====================================================================================
-    // END: NEW AND UPDATED FUNCTIONS
-    // ====================================================================================
-
-
-    // A simple filter list based on main page categories.
     getFilterList() {
         const mainPageCategories = [
             { name: "Featured", value: "/api/ts/roomlist/room-list/?limit=90" },
