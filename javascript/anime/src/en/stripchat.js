@@ -11,7 +11,7 @@ const mangayomiSources = [{
     "hasCloudflare": true,
     "sourceCodeUrl": "",
     "apiUrl": "",
-    "version": "1.0.5",
+    "version": "1.0.6",
     "isManga": false,
     "itemType": 1,
     "isFullData": false,
@@ -22,11 +22,11 @@ const mangayomiSources = [{
     "pkgPath": "anime/src/en/stripchat.js"
 }];
 
+
 class DefaultExtension extends MProvider {
   constructor() {
     super();
     this.client = new Client();
-    this.excludeIdsMap = {};
   }
 
   getPreference(key) {
@@ -41,7 +41,6 @@ class DefaultExtension extends MProvider {
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36",
     };
     if (isApi) {
-      headers["Content-Type"] = "application/json";
       headers["Accept"] = "application/json, text/plain, */*";
     } else {
       headers["Accept"] =
@@ -50,46 +49,36 @@ class DefaultExtension extends MProvider {
     return headers;
   }
 
+  // [FIX] Rewrote this function to use the new v2 GET API
   async fetchCategory(page, category, sortBy) {
-    if (page === 1) {
-      this.excludeIdsMap[category] = [];
-    }
+    const limit = 50;
+    const offset = (page - 1) * limit;
 
-    const payload = {
-      favoriteIds: [],
-      limit: 60,
-      offset: (page - 1) * 60,
-      primaryTag: category,
-      sortBy: sortBy,
-      userRole: "guest",
-      improveTs: false,
-      excludeModelIds: this.excludeIdsMap[category] || [],
-      isRecommendationDisabled: false,
-    };
+    const params = new URLSearchParams({
+        limit: limit,
+        offset: offset,
+        primaryTag: category,
+        sortBy: sortBy,
+        userRole: 'guest'
+    });
 
-    const res = await this.client.post(
-      this.source.apiUrl,
-      this.getHeaders(true),
-      JSON.stringify(payload)
-    );
+    const url = `${this.source.baseUrl}/api/front/v2/models?${params.toString()}`;
 
+    const res = await this.client.get(url, this.getHeaders(true));
     const data = JSON.parse(res.body);
-    const newIds = [];
+
     const list = data.models.map((model) => {
-      newIds.push(parseInt(model.id));
       return {
         name: model.username,
         link: `${this.source.baseUrl}/${model.username}`,
         imageUrl: model.previewUrlThumbSmall,
       };
     });
+    
+    // [IMPROVEMENT] Calculate hasNextPage accurately using totalCount from the API
+    const hasNextPage = (page * limit) < data.totalCount;
 
-    if (!this.excludeIdsMap[category]) {
-      this.excludeIdsMap[category] = [];
-    }
-    this.excludeIdsMap[category].push(...newIds);
-
-    return { list, hasNextPage: true }; // API provides continuous scroll, so always true
+    return { list, hasNextPage };
   }
 
   async getPopular(page) {
@@ -235,6 +224,4 @@ class DefaultExtension extends MProvider {
       },
     ];
   }
-}
-    }
 }
