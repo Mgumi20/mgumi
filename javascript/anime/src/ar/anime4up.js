@@ -7,7 +7,7 @@ const mangayomiSources = [{
     "iconUrl": "https://www.google.com/s2/favicons?sz=128&domain=https://anime4up.rest",
     "typeSource": "multi",
     "itemType": 1,
-    "version": "1.1.1",
+    "version": "1.1.2",
     "pkgPath": "anime/src/ar/anime4up.js"
 }];
 
@@ -166,7 +166,7 @@ class DefaultExtension extends MProvider {
     doc.select("ul.anime-genres > li > a, div.anime-info > a").forEach(g => genre.push(g.text));
 
     const chapters = [];
-    const episodeSelector = "ul.all-episodes-list li > a";
+    const episodeSelector = "div.mCSB_container li > a";
     const episodeElements = doc.select(episodeSelector);
     for (const el of episodeElements) {
         chapters.push({
