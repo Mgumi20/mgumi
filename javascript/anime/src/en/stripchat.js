@@ -11,7 +11,7 @@ const mangayomiSources = [{
     "hasCloudflare": true,
     "sourceCodeUrl": "",
     "apiUrl": "",
-    "version": "1.0.3",
+    "version": "1.0.4",
     "isManga": false,
     "itemType": 1,
     "isFullData": false,
@@ -23,227 +23,218 @@ const mangayomiSources = [{
 }];
 
 class DefaultExtension extends MProvider {
-    constructor() {
-        super();
-        this.client = new Client();
-        this.apiUrl = "https://stripchat.com/api/front/models/get-list";
+  constructor() {
+    super();
+    this.client = new Client();
+    this.excludeIdsMap = {};
+  }
+
+  getPreference(key) {
+    return new SharedPreferences().get(key);
+  }
+
+  getHeaders(isApi = false, referer = this.source.baseUrl) {
+    const headers = {
+      "Referer": referer,
+      "Origin": this.source.baseUrl,
+      "User-Agent":
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36",
+    };
+    if (isApi) {
+      headers["Content-Type"] = "application/json";
+      headers["Accept"] = "application/json, text/plain, */*";
+    } else {
+      headers["Accept"] =
+        "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7";
+    }
+    return headers;
+  }
+
+  async fetchCategory(page, category, sortBy) {
+    if (page === 1) {
+      this.excludeIdsMap[category] = [];
     }
 
-    getPreference(key) {
-        return new SharedPreferences().get(key);
+    const payload = {
+      favoriteIds: [],
+      limit: 60,
+      offset: (page - 1) * 60,
+      primaryTag: category,
+      sortBy: sortBy,
+      userRole: "guest",
+      improveTs: false,
+      excludeModelIds: this.excludeIdsMap[category] || [],
+      isRecommendationDisabled: false,
+    };
+
+    const res = await this.client.post(
+      this.source.apiUrl,
+      this.getHeaders(true),
+      JSON.stringify(payload)
+    );
+
+    const data = JSON.parse(res.body);
+    const newIds = [];
+    const list = data.models.map((model) => {
+      newIds.push(parseInt(model.id));
+      return {
+        name: model.username,
+        link: `${this.source.baseUrl}/${model.username}`,
+        imageUrl: model.previewUrlThumbSmall,
+      };
+    });
+
+    if (!this.excludeIdsMap[category]) {
+      this.excludeIdsMap[category] = [];
+    }
+    this.excludeIdsMap[category].push(...newIds);
+
+    return { list, hasNextPage: true }; // API provides continuous scroll, so always true
+  }
+
+  async getPopular(page) {
+    const category = this.getPreference("stripchat_popular_category") || "girls";
+    return await this.fetchCategory(page, category, "viewersRating");
+  }
+
+  async getLatestUpdates(page) {
+    const category = this.getPreference("stripchat_latest_category") || "girls";
+    return await this.fetchCategory(page, category, "new");
+  }
+
+  async search(query, page, filters) {
+    // Search is not paginated on the site, so we ignore the page parameter.
+    if (page > 1) return { list: [], hasNextPage: false };
+
+    const url = `${this.source.baseUrl}/search/models/${query}`;
+    const res = await this.client.get(url, this.getHeaders(false, url));
+    const doc = new Document(res.body);
+
+    const list = doc.select(".model-list-item").map((it) => {
+      const title = it.selectFirst(".model-list-item-username").text;
+      const href = this.source.baseUrl + it.selectFirst(".model-list-item-link").getHref;
+      const posterUrl = it.selectFirst(".image-background")?.getSrc;
+      const imageUrl = posterUrl ? this.source.baseUrl + posterUrl : "";
+      return {
+        name: title,
+        link: href,
+        imageUrl: imageUrl,
+      };
+    });
+
+    return { list, hasNextPage: false };
+  }
+
+  async getDetail(url) {
+    const res = await this.client.get(url, this.getHeaders(false, url));
+    const doc = new Document(res.body);
+
+    const name =
+      doc.selectFirst("meta[property='og:title']")?.attr("content")
+        ?.replace(" on Stripchat", "")
+        ?.trim() || "";
+    const imageUrl =
+      doc.selectFirst("meta[property='og:image']")?.attr("content") || "";
+    const description =
+      doc.selectFirst("meta[property='og:description']")?.attr("content")
+        ?.trim() || "";
+
+    const chapters = [
+      {
+        name: "Live Stream",
+        url: url, // Pass the same URL to getVideoList
+      },
+    ];
+
+    return {
+      name,
+      link: url,
+      imageUrl,
+      description,
+      chapters,
+    };
+  }
+
+  unescapeUnicode(str) {
+    return str.replace(/\\u([\d\w]{4})/gi, (match, grp) => {
+      return String.fromCharCode(parseInt(grp, 16));
+    });
+  }
+
+  async getVideoList(url) {
+    const res = await this.client.get(url, this.getHeaders(false, url));
+    const doc = new Document(res.body);
+
+    const scriptElement = doc
+      .select("script")
+      .find((el) => el.text.includes("window.__PRELOADED_STATE__"));
+
+    if (!scriptElement) {
+      throw new Error("Could not find stream data.");
     }
 
-    getHeaders(referer = this.source.baseUrl) {
-        return {
-            "Referer": referer,
-            "Origin": this.source.baseUrl,
-            "Content-Type": "application/json", // Required for POST requests with a JSON body
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36",
-        };
+    const scriptContent = this.unescapeUnicode(scriptElement.text);
+    const jsonString = scriptContent.substring(
+      scriptContent.indexOf("{"),
+      scriptContent.lastIndexOf("}") + 1
+    );
+
+    const state = JSON.parse(jsonString);
+    const modelData = state?.model?.data || state?.modelData;
+
+    if (!modelData) {
+      throw new Error("Could not parse model data from page.");
     }
 
-    /**
-     * Helper function to get room lists from the Stripchat API.
-     * @param {string} category - The primary tag for the category (e.g., "girls").
-     * @param {number} page - The page number.
-     * @returns {Promise<object>} - A promise resolving to a list of rooms and pagination info.
-     */
-    async _getApiRoomList(category, page) {
-        const offset = page > 1 ? 60 * (page - 1) : 0;
-        
-        // --- THIS IS THE FIX ---
-        // The API requires a more complete payload, including 'userRole'.
-        const payload = {
-            "limit": 60,
-            "offset": offset,
-            "primaryTag": category,
-            "sortBy": "viewersRating",
-            "userRole": "guest",
-            "isRecommendationDisabled": false,
-            "favoriteIds": [],
-            "excludeModelIds": [],
-            "improveTs": false
-        };
+    const streamName = modelData.streamName;
+    const streamHost = modelData.hlsStreamHost;
+    const hlsUrlTemplate = modelData.hlsStreamUrlTemplate;
 
-        try {
-            const res = await this.client.post(this.apiUrl, this.getHeaders(), payload);
-            const data = JSON.parse(res.body);
-            const list = [];
-
-            if (data && data.models) {
-                for (const model of data.models) {
-                    list.push({
-                        name: model.username,
-                        link: `${this.source.baseUrl}/${model.username}`,
-                        imageUrl: model.previewUrlThumbSmall
-                    });
-                }
-            }
-            return { list, hasNextPage: list.length > 0 };
-        } catch (e) {
-            console.error(`Failed to fetch from Stripchat API for category '${category}'`, e);
-            return { list: [], hasNextPage: false };
-        }
+    if (!streamName || !streamHost || !hlsUrlTemplate) {
+      throw new Error("Required stream information not found.");
     }
 
-    // 'getPopular' will now correctly fetch the "girls" category.
-    async getPopular(page) {
-        return this._getApiRoomList("girls", page);
-    }
-    
-    // 'getLatestUpdates' is now fixed and shows the "couples" category for variety.
-    async getLatestUpdates(page) {
-        return this._getApiRoomList("couples", page);
-    }
+    const m3u8Url = hlsUrlTemplate
+      .replace("{cdnHost}", streamHost)
+      .replace("{streamName}", streamName)
+      .replace("{suffix}", "_auto");
 
-    // Handles both filtered API calls and text-based search scraping.
-    async search(query, page, filters) {
-        if (query) {
-            // If there's a search query, scrape the website.
-            const url = `${this.source.baseUrl}/search/models/${encodeURIComponent(query)}?page=${page}`;
-            const doc = new Document((await this.client.get(url, this.getHeaders())).body);
-            const list = [];
-            doc.select(".model-list-item").forEach(element => {
-                const name = element.selectFirst(".model-list-item-username")?.text;
-                const link = this.source.baseUrl + element.selectFirst(".model-list-item-link")?.attr("href");
-                const imageUrl = element.selectFirst(".image-background")?.attr("src");
-                if (name && link) {
-                    list.push({ name, link, imageUrl });
-                }
-            });
-            return { list, hasNextPage: list.length > 0 };
-        } else {
-            // If no query, use the filters to call the API.
-            const categoryFilter = filters[0];
-            const selectedCategory = categoryFilter.values[categoryFilter.state].value;
-            return this._getApiRoomList(selectedCategory, page);
-        }
-    }
+    return [
+      {
+        url: m3u8Url,
+        originalUrl: m3u8Url,
+        quality: "Live",
+        headers: {
+          Referer: this.source.baseUrl,
+        },
+      },
+    ];
+  }
 
-    // Gets details for a specific room by scraping meta tags.
-    async getDetail(url) {
-        const res = await this.client.get(url, this.getHeaders(url));
-        const doc = new Document(res.body);
-
-        const name = doc.selectFirst("meta[property='og:title']")?.attr("content")?.trim() || "Unknown";
-        const imageUrl = doc.selectFirst("meta[property='og:image']")?.attr("content");
-        const description = doc.selectFirst("meta[property='og:description']")?.attr("content")?.trim();
-        
-        const chapters = [{ name: "Live Stream", url: url }];
-
-        return { name, imageUrl, description, chapters, link: url };
-    }
-
-    async _extractQualitiesFromM3U8(masterUrl, headers) {
-        const qualities = [];
-        try {
-            const res = await this.client.get(masterUrl, { headers });
-            const masterContent = res.body;
-            const lines = masterContent.split('\n');
-            const baseUrl = masterUrl.substring(0, masterUrl.lastIndexOf('/') + 1);
-
-            for (let i = 0; i < lines.length; i++) {
-                if (lines[i].startsWith("#EXT-X-STREAM-INF")) {
-                    const resolutionMatch = lines[i].match(/RESOLUTION=\d+x(\d+)/);
-                    const qualityLabel = resolutionMatch ? `${resolutionMatch[1]}p` : "Stream";
-                    if (i + 1 < lines.length) {
-                        const mediaPlaylistUrl = baseUrl + lines[i + 1].trim();
-                        qualities.push({ url: mediaPlaylistUrl, originalUrl: mediaPlaylistUrl, quality: qualityLabel, headers: headers });
-                    }
-                }
-            }
-        } catch (e) {
-            console.error("Failed to extract qualities from Stripchat M3U8:", e);
-        }
-        return qualities.sort((a, b) => parseInt(b.quality) - parseInt(a.quality));
-    }
-
-    async getVideoList(url) {
-        const res = await this.client.get(url, this.getHeaders(url));
-        const html = res.body;
-
-        const stateMatch = html.match(/window\.__PRELOADED_STATE__\s*=\s*(\{.*?\});/);
-        if (!stateMatch || !stateMatch[1]) {
-            throw new Error("Could not find or extract window.__PRELOADED_STATE__ data.");
-        }
-
-        let roomData;
-        try {
-            roomData = JSON.parse(stateMatch[1]);
-        } catch (e) {
-            throw new Error("Could not parse the __PRELOADED_STATE__ JSON.");
-        }
-
-        // Navigate through the complex JSON object to get the stream info
-        const modelInfo = roomData?.model?.data?.model;
-
-        if (!modelInfo) {
-             throw new Error("Model data is not available in __PRELOADED_STATE__.");
-        }
-
-        const streamName = modelInfo.streamName;
-        const streamHost = modelInfo.hlsStreamHost;
-        const hlsUrlTemplate = modelInfo.hlsStreamUrlTemplate;
-
-        if (!streamName || !streamHost || !hlsUrlTemplate) {
-            throw new Error("Stream information (streamName, hlsStreamHost, or hlsUrlTemplate) is missing.");
-        }
-
-        const masterM3u8Url = hlsUrlTemplate
-            .replace("{cdnHost}", streamHost)
-            .replace("{streamName}", streamName)
-            .replace("{suffix}", "_auto");
-            
-        // As per the Kotlin code, an empty referer is sometimes needed for the CDN link itself.
-        const streamHeaders = { "Referer": "" };
-
-        const masterStream = { url: masterM3u8Url, originalUrl: masterM3u8Url, quality: "Auto (Live)", headers: streamHeaders };
-        const individualQualities = await this._extractQualitiesFromM3U8(masterM3u8Url, streamHeaders);
-        
-        const allStreams = [masterStream, ...individualQualities];
-        
-        const preferredQuality = this.getPreference('preferred_quality') || 'auto';
-        if (preferredQuality === 'auto') {
-            return allStreams;
-        }
-
-        const foundIndex = allStreams.findIndex(s => s.quality.includes(preferredQuality));
-        if (foundIndex > -1) {
-            const [preferredStream] = allStreams.splice(foundIndex, 1);
-            allStreams.unshift(preferredStream);
-        }
-        
-        return allStreams;
-    }
-
-    getFilterList() {
-        const categories = [
-            { name: "Girls", value: "girls" },
-            { name: "Couples", value: "couples" },
-            { name: "Men", value: "men" },
-            { name: "Trans", value: "trans" },
-        ];
-        
-        const filterValues = categories.map(cat => ({ type_name: "SelectOption", name: cat.name, value: cat.value }));
-
-        return [{
-            type_name: "SelectFilter",
-            name: "Category",
-            state: 0,
-            values: filterValues
-        }];
-    }
-    
-    getSourcePreferences() {
-        return [{
-            key: 'preferred_quality',
-            listPreference: {
-                title: 'Preferred Video Quality',
-                summary: 'Select the default quality for streams.',
-                valueIndex: 0,
-                entries: ["Auto (Live)", "1080p", "720p", "480p", "360p", "240p"],
-                entryValues: ["auto", "1080", "720", "480", "360", "240"]
-            }
-        }];
+  getSourcePreferences() {
+    return [
+      {
+        key: "stripchat_popular_category",
+        listPreference: {
+          title: "Popular Category",
+          summary: "Select the category to show in the Popular tab",
+          valueIndex: 0,
+          entries: ["Girls", "Couples", "Men", "Trans"],
+          entryValues: ["girls", "couples", "men", "trans"],
+        },
+      },
+      {
+        key: "stripchat_latest_category",
+        listPreference: {
+          title: "Latest (New Models) Category",
+          summary: "Select the category to show in the Latest tab",
+          valueIndex: 0,
+          entries: ["Girls", "Couples", "Men", "Trans"],
+          entryValues: ["girls", "couples", "men", "trans"],
+        },
+      },
+    ];
+  }
+}
     }
 }
