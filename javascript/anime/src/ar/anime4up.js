@@ -7,7 +7,7 @@ const mangayomiSources = [{
     "iconUrl": "https://www.google.com/s2/favicons?sz=128&domain=https://anime4up.rest",
     "typeSource": "multi",
     "itemType": 1,
-    "version": "1.0.2",
+    "version": "1.0.3",
     "pkgPath": "anime/src/ar/anime4up.js"
 }];
 
@@ -37,22 +37,25 @@ class DefaultExtension extends MProvider {
     return new Document(res.body);
   }
 
+  // This function is used to parse anime from listing pages (popular, latest, search).
   parseAnimeListPage(doc) {
     const list = [];
-    const items = doc.select("div.anime-list-content div.anime-card-poster > div.hover");
+    // Use a robust selector that works across different list pages.
+    const items = doc.select(".anime-card-container"); 
 
     for (const item of items) {
-      const img = item.selectFirst("img");
       const linkElement = item.selectFirst("a");
+      const img = item.selectFirst("img");
+
       if (img && linkElement) {
-        const name = img.attr("alt");
+        const name = img.attr("alt") || "No Title";
         const imageUrl = img.getSrc;
         const link = linkElement.getHref;
         list.push({ name, imageUrl, link });
       }
     }
 
-    const hasNextPage = doc.selectFirst("ul.pagination > li > a.next") !== null;
+    const hasNextPage = doc.selectFirst("ul.pagination li a.next") !== null;
     return { list, hasNextPage };
   }
 
@@ -61,31 +64,38 @@ class DefaultExtension extends MProvider {
     return this.parseAnimeListPage(doc);
   }
 
+  // Your implementation for latest updates has been integrated.
   async getLatestUpdates(page) {
-    throw new Error("Not supported");
+    // The main anime list page, sorted by latest.
+    const slug = `/قائمة-الانمي/page/${page}/`;
+    const doc = await this.getDocument(slug);
+    return this.parseAnimeListPage(doc);
   }
 
   async search(query, page, filters) {
     if (query) {
-      const url = page > 1 ? `/page/${page}/?s=${query}&search_param=animes` : `/?search_param=animes&s=${query}`;
+      const url = page > 1 
+        ? `/page/${page}/?s=${query}&search_param=animes`
+        : `/?search_param=animes&s=${query}`;
       const doc = await this.getDocument(url);
-      const searchSelector = "div.row.display-flex > div"; // More specific selector for search from CS3
+      
       const list = [];
-       doc.select(searchSelector).forEach(item => {
-           const linkEl = item.selectFirst("a");
-           const imgEl = item.selectFirst("img");
-           if(linkEl && imgEl) {
-               list.push({
-                   name: imgEl.attr("alt"),
-                   link: linkEl.getHref,
-                   imageUrl: imgEl.getSrc,
-               });
-           }
-       });
-       const hasNextPage = doc.selectFirst("ul.pagination > li > a.next") !== null;
-       return { list, hasNextPage };
+      const searchItems = doc.select(".anime-card-container");
+      for(const item of searchItems){
+          const linkEl = item.selectFirst("a");
+          const imgEl = item.selectFirst("img");
+          if(linkEl && imgEl) {
+              list.push({
+                  name: imgEl.attr("alt"),
+                  link: linkEl.getHref,
+                  imageUrl: imgEl.getSrc,
+              });
+          }
+      }
+      const hasNextPage = doc.selectFirst("ul.pagination > li > a.next") !== null;
+      return { list, hasNextPage };
     }
-
+    
     // Filters logic
     let genre = "";
     let type = "";
@@ -106,7 +116,7 @@ class DefaultExtension extends MProvider {
     if (statusFilter) {
         status = statusFilter.values[statusFilter.state].value;
     }
-
+    
     let url;
     if (genre) {
       url = `/anime-genre/${genre}/page/${page}/`;
@@ -117,15 +127,15 @@ class DefaultExtension extends MProvider {
     } else {
       throw new Error("اختر فلتر (Select a filter)");
     }
-
+    
     const doc = await this.getDocument(url);
     return this.parseAnimeListPage(doc);
   }
 
   statusCode(status) {
     status = status.toLowerCase();
-    if (status.includes("يعرض الان")) return 0; // Ongoing
-    if (status.includes("مكتمل")) return 1; // Completed
+    if (status.includes("يعرض الان")) return 0;
+    if (status.includes("مكتمل")) return 1;
     return 5; // Unknown
   }
 
@@ -134,40 +144,40 @@ class DefaultExtension extends MProvider {
 
     const name = doc.selectFirst("h1.anime-details-title").text;
     const imageUrl = doc.selectFirst("img.thumbnail").getSrc;
-
+    
     let description = "";
     doc.select("div.anime-info").forEach(info => {
       description += info.text + "\n";
     });
     const story = doc.selectFirst("p.anime-story")?.text;
     if (story) {
-      description += "\n" + story;
+        description += "\n" + story;
     }
-
+    
     let status = 5;
     const statusElement = doc.select("div.anime-info:contains(حالة الأنمي)");
     if (statusElement.length > 0) {
-      status = this.statusCode(statusElement[0].text);
+        status = this.statusCode(statusElement[0].text);
     }
     
     const genre = [];
     doc.select("ul.anime-genres > li > a, div.anime-info > a").forEach(g => genre.push(g.text));
 
     const chapters = [];
-    const episodeSelector = "div.ehover6 > div.episodes-card-title > h3 > a, ul.all-episodes-list li > a";
+    // The selector for episodes on the detail page.
+    const episodeSelector = "ul.all-episodes-list li > a";
     const episodeElements = doc.select(episodeSelector);
     for (const el of episodeElements) {
-      chapters.push({
-        name: el.text,
-        url: el.getHref,
-      });
+        chapters.push({
+            name: el.text,
+            url: el.getHref
+        });
     }
     chapters.reverse();
 
     return { name, imageUrl, description, genre, status, chapters, link: url };
   }
   
-  // Handles Base64 decoding
   decodeBase64(str) {
     try {
       return atob(str);
@@ -181,7 +191,26 @@ class DefaultExtension extends MProvider {
     const doc = await this.getDocument(url.replace(this.getBaseUrl(), ""));
     const streams = [];
 
-    // --- Server Extraction ---
+    // --- Moshahda Download Links ---
+    const moshahda_b64 = doc.selectFirst("input[name='moshahda']")?.attr("value");
+    if(moshahda_b64){
+        const moshahdaID = this.decodeBase64(moshahda_b64);
+        if (moshahdaID) {
+            const qualities = {
+                "Original": "download_o", "720p": "download_x",
+                "480p": "download_h", "360p": "download_n", "240p": "download_l"
+            };
+            for (const quality in qualities) {
+                streams.push({
+                    url: `https://moshahda.net/${moshahdaID}.html?${qualities[quality]}`,
+                    originalUrl: `https://moshahda.net/${moshahdaID}.html?${qualities[quality]}`,
+                    quality: `Moshahda ${quality} [Download]`,
+                });
+            }
+        }
+    }
+
+    // --- Streaming Server Extraction ---
     const fhd_b64 = doc.selectFirst("form input[name='watch_fhd']")?.attr("value") || "";
     const hd_b64 = doc.selectFirst("form input[name='watch_hd']")?.attr("value") || "";
     const sd_b64 = doc.selectFirst("form input[name='watch_SD']")?.attr("value") || "";
@@ -189,41 +218,22 @@ class DefaultExtension extends MProvider {
     const fhd_servers = JSON.parse(this.decodeBase64(fhd_b64));
     const hd_servers = JSON.parse(this.decodeBase64(hd_b64));
     const sd_servers = JSON.parse(this.decodeBase64(sd_b64));
-
+    
     const allServers = [...(fhd_servers || []), ...(hd_servers || []), ...(sd_servers || [])];
     const uniqueLinks = [...new Set(allServers.map(server => server.link))];
-
-    // --- Moshahda Download Links ---
-    const moshahda_b64 = doc.selectFirst("input[name='moshahda']")?.attr("value");
-    if(moshahda_b64){
-        const moshahdaID = this.decodeBase64(moshahda_b64);
-        const qualities = {
-            "Original": "download_o", "720p": "download_x",
-            "480p": "download_h", "360p": "download_n", "240p": "download_l"
-        };
-        for (const quality in qualities) {
-            streams.push({
-                url: `https://moshahda.net/${moshahdaID}.html?${qualities[quality]}`,
-                originalUrl: `https://moshahda.net/${moshahdaID}.html?${qualities[quality]}`,
-                quality: `Moshahda ${quality} [Download]`,
-                // Note: These are direct download links, not streaming URLs.
-                // An additional step might be needed to make them streamable.
-            });
-        }
-    }
     
-    // --- IMPORTANT NOTE ---
-    // The Kotlin extension uses many complex, third-party extractor libraries.
+    console.log("Found server links that require JS extractors:", uniqueLinks);
+    
+    // IMPORTANT NOTE: The Kotlin extension uses many complex, third-party extractor libraries.
     // These are not available in Mangayomi. To make this source fully functional,
     // each extractor would need to be implemented in JavaScript.
-    console.log("Found server links that require extractors:", uniqueLinks);
     
-    // You can add simple direct links if they exist, but most will require extraction.
-    if(streams.length === 0){
-        throw new Error("Video extractors not implemented for this source's streaming servers. Only Moshahda download links were found (if any).");
+    if (streams.length === 0 && uniqueLinks.length > 0) {
+        throw new Error("Video extractors not implemented for this source's streaming servers. Only download links were found (if any).");
+    } else if (streams.length === 0) {
+        throw new Error("No video links found.");
     }
-
-    // Sort by user preference
+    
     const qualityPref = this.getPreference("preferred_quality");
     return streams.sort((a, b) => {
         const aHasQuality = a.quality.includes(qualityPref);
@@ -322,10 +332,10 @@ class DefaultExtension extends MProvider {
         key: "preferred_quality",
         listPreference: {
           title: "Preferred quality",
-          summary: "Select the quality to be prioritized",
+          summary: "Select the quality to be prioritized for download links",
           valueIndex: 0,
-          entries: ["1080p", "720p", "480p", "360p", "Moshahda"],
-          entryValues: ["1080p", "720p", "480p", "360p", "Moshahda"],
+          entries: ["Original", "720p", "480p", "360p", "240p"],
+          entryValues: ["Original", "720p", "480p", "360p", "240p"],
         },
       },
     ];
