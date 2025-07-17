@@ -1,19 +1,15 @@
 // --- START OF FILE anime4up.js ---
-
-const mangayomiSources = [
-  {
+const mangayomiSources = [{
     "name": "Anime4Up",
+    "id": 402283993,
     "lang": "ar",
-    "id": 402283993, // Using ID from previous conversion for consistency
     "baseUrl": "https://anime4up.rest",
-    "apiUrl": "",
-    "iconUrl": "https://www.google.com/s2/favicons?sz=256&domain=anime4up.rest",
-    "typeSource": "single",
+    "iconUrl": "https://www.google.com/s2/favicons?sz=128&domain=https://anime4up.rest",
+    "typeSource": "multi",
     "itemType": 1,
-    "version": "1.0.1",
-    "pkgPath": "anime/src/ar/anime4up.js",
-  },
-];
+    "version": "1.0.2",
+    "pkgPath": "anime/src/ar/anime4up.js"
+}];
 
 class DefaultExtension extends MProvider {
   constructor() {
