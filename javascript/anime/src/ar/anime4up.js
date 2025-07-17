@@ -7,9 +7,10 @@ const mangayomiSources = [{
     "iconUrl": "https://www.google.com/s2/favicons?sz=128&domain=https://anime4up.rest",
     "typeSource": "multi",
     "itemType": 1,
-    "version": "1.1.2",
+    "version": "1.1.3",
     "pkgPath": "anime/src/ar/anime4up.js"
 }];
+
 
 class DefaultExtension extends MProvider {
   constructor() {
@@ -31,10 +32,7 @@ class DefaultExtension extends MProvider {
     };
   }
 
-  // FIXED getDocument function
   async getDocument(slug) {
-    // If the slug is already a full URL (starts with http), use it directly.
-    // Otherwise, prepend the base URL. This fixes the double URL issue.
     const url = slug.startsWith("http") ? slug : this.getBaseUrl() + slug;
     const res = await this.client.get(url, this.getHeaders());
     return new Document(res.body);
@@ -43,7 +41,6 @@ class DefaultExtension extends MProvider {
   // This function is used to parse anime from listing pages (popular, latest, search).
   parseAnimeListPage(doc) {
     const list = [];
-    // Use a robust selector that works across different list pages.
     const items = doc.select(".anime-card-container"); 
 
     for (const item of items) {
@@ -141,8 +138,7 @@ class DefaultExtension extends MProvider {
   }
 
   async getDetail(url) {
-    // Pass the full URL to the robust getDocument function.
-    const doc = await this.getDocument(url); 
+    const doc = await this.getDocument(url);
 
     const name = doc.selectFirst("h1.anime-details-title").text;
     const imageUrl = doc.selectFirst("img.thumbnail").getSrc;
@@ -165,18 +161,21 @@ class DefaultExtension extends MProvider {
     const genre = [];
     doc.select("ul.anime-genres > li > a, div.anime-info > a").forEach(g => genre.push(g.text));
 
+    // --- START OF USER'S FIX ---
     const chapters = [];
-    const episodeSelector = "div.mCSB_container li > a";
-    const episodeElements = doc.select(episodeSelector);
+    const episodeElements = doc.select("#mCSB_1_container li > a");
+
     for (const el of episodeElements) {
         chapters.push({
-            name: el.text,
-            url: el.getHref
+            name: el.text.trim(),
+            url: el.attr("href"),
         });
     }
+
     chapters.reverse();
 
     return { name, imageUrl, description, genre, status, chapters, link: url };
+    // --- END OF USER'S FIX ---
   }
   
   decodeBase64(str) {
@@ -189,7 +188,6 @@ class DefaultExtension extends MProvider {
   }
 
   async getVideoList(url) {
-    // Pass the full URL to the robust getDocument function.
     const doc = await this.getDocument(url);
     const streams = [];
 
@@ -225,10 +223,6 @@ class DefaultExtension extends MProvider {
     const uniqueLinks = [...new Set(allServers.map(server => server.link))];
     
     console.log("Found server links that require JS extractors:", uniqueLinks);
-    
-    // IMPORTANT NOTE: The Kotlin extension uses many complex, third-party extractor libraries.
-    // These are not available in Mangayomi. To make this source fully functional,
-    // each extractor would need to be implemented in JavaScript.
     
     if (streams.length === 0 && uniqueLinks.length > 0) {
         throw new Error("Video extractors not implemented for this source's streaming servers. Only download links were found (if any).");
