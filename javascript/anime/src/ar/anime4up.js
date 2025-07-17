@@ -7,7 +7,7 @@ const mangayomiSources = [{
     "iconUrl": "https://www.google.com/s2/favicons?sz=128&domain=https://anime4up.rest",
     "typeSource": "multi",
     "itemType": 1,
-    "version": "1.0.3",
+    "version": "1.0.4",
     "pkgPath": "anime/src/ar/anime4up.js"
 }];
 
@@ -60,7 +60,7 @@ class DefaultExtension extends MProvider {
   }
 
   async getPopular(page) {
-    const doc = await this.getDocument(`/anime-list-3/page/${page}/`);
+    const doc = await this.getDocument(`/episode/page/${page}/`);
     return this.parseAnimeListPage(doc);
   }
 
