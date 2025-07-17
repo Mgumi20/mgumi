@@ -20,7 +20,7 @@ This repository contains the available javascript extension catalogues for the M
 
 | Name | Version | Language | Last Updated |
 |------|---------|----------|---------------|
-| Stripchat | 1.0.5 | en | 2025/07/17 23:48 IST |
+| Stripchat | 1.0.6 | en | 2025/07/18 00:41 IST |
 | H | 1.0.5 | en | 2025/07/17 23:18 IST |
 | Chatrubate | 1.1.9 | en | 2025/07/17 21:29 IST |
 | Hstream | 1.4.1 | en | 2025/07/17 04:27 IST |
