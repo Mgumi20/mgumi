@@ -7,7 +7,7 @@ const mangayomiSources = [{
     "iconUrl": "https://www.google.com/s2/favicons?sz=128&domain=https://anime4up.rest",
     "typeSource": "multi",
     "itemType": 1,
-    "version": "1.1.3",
+    "version": "1.1.4",
     "pkgPath": "anime/src/ar/anime4up.js"
 }];
 
@@ -38,7 +38,6 @@ class DefaultExtension extends MProvider {
     return new Document(res.body);
   }
 
-  // This function is used to parse anime from listing pages (popular, latest, search).
   parseAnimeListPage(doc) {
     const list = [];
     const items = doc.select(".anime-card-container"); 
@@ -161,21 +160,22 @@ class DefaultExtension extends MProvider {
     const genre = [];
     doc.select("ul.anime-genres > li > a, div.anime-info > a").forEach(g => genre.push(g.text));
 
-    // --- START OF USER'S FIX ---
+    // --- FIX APPLIED HERE ---
     const chapters = [];
-    const episodeElements = doc.select("#mCSB_1_container li > a");
+    // Use the correct selector for the new episode list structure.
+    const episodeSelector = "div#mCSB_1_container li a";
+    const episodeElements = doc.select(episodeSelector);
 
     for (const el of episodeElements) {
         chapters.push({
             name: el.text.trim(),
-            url: el.attr("href"),
+            url: el.getHref
         });
     }
-
     chapters.reverse();
+    // --- END OF FIX ---
 
     return { name, imageUrl, description, genre, status, chapters, link: url };
-    // --- END OF USER'S FIX ---
   }
   
   decodeBase64(str) {
@@ -191,7 +191,6 @@ class DefaultExtension extends MProvider {
     const doc = await this.getDocument(url);
     const streams = [];
 
-    // --- Moshahda Download Links ---
     const moshahda_b64 = doc.selectFirst("input[name='moshahda']")?.attr("value");
     if(moshahda_b64){
         const moshahdaID = this.decodeBase64(moshahda_b64);
@@ -210,7 +209,6 @@ class DefaultExtension extends MProvider {
         }
     }
 
-    // --- Streaming Server Extraction ---
     const fhd_b64 = doc.selectFirst("form input[name='watch_fhd']")?.attr("value") || "";
     const hd_b64 = doc.selectFirst("form input[name='watch_hd']")?.attr("value") || "";
     const sd_b64 = doc.selectFirst("form input[name='watch_SD']")?.attr("value") || "";
