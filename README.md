@@ -20,7 +20,7 @@ This repository contains the available javascript extension catalogues for the M
 
 | Name | Version | Language | Last Updated |
 |------|---------|----------|---------------|
-| Anime4Up | 1.1.3 | ar | 2025/07/18 05:05 IST |
+| Anime4Up | 1.1.4 | ar | 2025/07/18 05:09 IST |
 | Stripchat | 1.0.7 | en | 2025/07/18 00:51 IST |
 | H | 1.0.5 | en | 2025/07/17 23:18 IST |
 | Chatrubate | 1.1.9 | en | 2025/07/17 21:29 IST |
