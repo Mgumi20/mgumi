@@ -7,7 +7,7 @@ const mangayomiSources = [{
     "iconUrl": "https://www.google.com/s2/favicons?sz=128&domain=https://anime4up.rest",
     "typeSource": "multi",
     "itemType": 1,
-    "version": "1.0.9",
+    "version": "1.1.0",
     "pkgPath": "anime/src/ar/anime4up.js"
 }];
 
@@ -59,13 +59,13 @@ class DefaultExtension extends MProvider {
     return { list, hasNextPage };
   }
 
-  async getPopular(page) {
+  async getLatestUpdates(page) {
     const doc = await this.getDocument(`/episode/page/${page}/`);
     return this.parseAnimeListPage(doc);
   }
 
   // Your implementation for latest updates has been integrated.
-  async getLatestUpdates(page) {
+  async getPopular(page) {
     // The main anime list page, sorted by latest.
     const slug = `/قائمة-الانمي/page/${page}/`;
     const doc = await this.getDocument(slug);
