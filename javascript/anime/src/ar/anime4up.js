@@ -7,7 +7,7 @@ const mangayomiSources = [{
     "iconUrl": "https://www.google.com/s2/favicons?sz=128&domain=https://anime4up.rest",
     "typeSource": "multi",
     "itemType": 1,
-    "version": "1.0.5",
+    "version": "1.0.6",
     "pkgPath": "anime/src/ar/anime4up.js"
 }];
 
@@ -40,7 +40,8 @@ class DefaultExtension extends MProvider {
   // This function is used to parse anime from listing pages (popular, latest, search).
   parseAnimeListPage(doc) {
     const list = [];
-    const items = doc.select(".anime-card-container");
+    // Use a robust selector that works across different list pages.
+    const items = doc.select(".anime-card-container"); 
 
     for (const item of items) {
       const linkElement = item.selectFirst("a");
@@ -49,8 +50,7 @@ class DefaultExtension extends MProvider {
       if (img && linkElement) {
         const name = img.attr("alt") || "No Title";
         const imageUrl = img.getSrc;
-        // **FIX**: Save only the path of the URL, not the full domain.
-        const link = new URL(linkElement.getHref).pathname;
+        const link = linkElement.getHref;
         list.push({ name, imageUrl, link });
       }
     }
@@ -59,37 +59,17 @@ class DefaultExtension extends MProvider {
     return { list, hasNextPage };
   }
 
-  // Using the corrected path from your snippet.
   async getPopular(page) {
     const doc = await this.getDocument(`/قائمة-الانمي/page/${page}/`);
     return this.parseAnimeListPage(doc);
   }
 
-  // Using the corrected path from your snippet.
+  // Your implementation for latest updates has been integrated.
   async getLatestUpdates(page) {
+    // The main anime list page, sorted by latest.
     const slug = `/episode/page/${page}/`;
     const doc = await this.getDocument(slug);
-    // The latest episodes page has a slightly different structure, so we need to parse it differently.
-    const list = [];
-    const items = doc.select(".episodes-card-container");
-    for(const item of items) {
-        const linkEl = item.selectFirst("a");
-        const imgEl = item.selectFirst("img");
-        if(linkEl && imgEl) {
-            // The link on the latest page goes to the episode, we need the anime link.
-            // We can derive it by removing the episode-specific part.
-            const animeLink = linkEl.getHref.replace(/-الحلقة-\d+$/, '');
-            list.push({
-                name: imgEl.attr("alt"),
-                link: new URL(animeLink).pathname,
-                imageUrl: imgEl.getSrc,
-            });
-        }
-    }
-    // Remove duplicate anime from the list
-    const uniqueList = list.filter((v,i,a)=>a.findIndex(t=>(t.link === v.link))===i);
-    const hasNextPage = doc.selectFirst("ul.pagination li a.next") !== null;
-    return { list: uniqueList, hasNextPage };
+    return this.parseAnimeListPage(doc);
   }
 
   async search(query, page, filters) {
@@ -107,8 +87,7 @@ class DefaultExtension extends MProvider {
           if(linkEl && imgEl) {
               list.push({
                   name: imgEl.attr("alt"),
-                  // **FIX**: Save only the path of the URL.
-                  link: new URL(linkEl.getHref).pathname,
+                  link: linkEl.getHref,
                   imageUrl: imgEl.getSrc,
               });
           }
@@ -117,7 +96,7 @@ class DefaultExtension extends MProvider {
       return { list, hasNextPage };
     }
     
-    // Filters logic remains the same
+    // Filters logic
     let genre = "";
     let type = "";
     let status = "";
@@ -161,8 +140,7 @@ class DefaultExtension extends MProvider {
   }
 
   async getDetail(url) {
-    // **FIX**: `url` is now correctly just a path, so this works.
-    const doc = await this.getDocument(url);
+    const doc = await this.getDocument(url.replace(this.getBaseUrl(), ""));
 
     const name = doc.selectFirst("h1.anime-details-title").text;
     const imageUrl = doc.selectFirst("img.thumbnail").getSrc;
@@ -186,17 +164,18 @@ class DefaultExtension extends MProvider {
     doc.select("ul.anime-genres > li > a, div.anime-info > a").forEach(g => genre.push(g.text));
 
     const chapters = [];
+    // The selector for episodes on the detail page.
     const episodeSelector = "ul.all-episodes-list li > a";
     const episodeElements = doc.select(episodeSelector);
     for (const el of episodeElements) {
         chapters.push({
             name: el.text,
-            url: new URL(el.getHref).pathname,
+            url: el.getHref
         });
     }
     chapters.reverse();
 
-    return { name, imageUrl, description, genre, status, chapters, link: this.getBaseUrl() + url };
+    return { name, imageUrl, description, genre, status, chapters, link: url };
   }
   
   decodeBase64(str) {
@@ -209,7 +188,7 @@ class DefaultExtension extends MProvider {
   }
 
   async getVideoList(url) {
-    const doc = await this.getDocument(url);
+    const doc = await this.getDocument(url.replace(this.getBaseUrl(), ""));
     const streams = [];
 
     // --- Moshahda Download Links ---
@@ -244,6 +223,10 @@ class DefaultExtension extends MProvider {
     const uniqueLinks = [...new Set(allServers.map(server => server.link))];
     
     console.log("Found server links that require JS extractors:", uniqueLinks);
+    
+    // IMPORTANT NOTE: The Kotlin extension uses many complex, third-party extractor libraries.
+    // These are not available in Mangayomi. To make this source fully functional,
+    // each extractor would need to be implemented in JavaScript.
     
     if (streams.length === 0 && uniqueLinks.length > 0) {
         throw new Error("Video extractors not implemented for this source's streaming servers. Only download links were found (if any).");
