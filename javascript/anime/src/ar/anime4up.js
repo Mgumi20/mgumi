@@ -7,7 +7,7 @@ const mangayomiSources = [{
     "iconUrl": "https://www.google.com/s2/favicons?sz=128&domain=https://anime4up.rest",
     "typeSource": "multi",
     "itemType": 1,
-    "version": "1.1.0",
+    "version": "1.1.1",
     "pkgPath": "anime/src/ar/anime4up.js"
 }];
 
@@ -31,8 +31,11 @@ class DefaultExtension extends MProvider {
     };
   }
 
+  // FIXED getDocument function
   async getDocument(slug) {
-    const url = this.getBaseUrl() + slug;
+    // If the slug is already a full URL (starts with http), use it directly.
+    // Otherwise, prepend the base URL. This fixes the double URL issue.
+    const url = slug.startsWith("http") ? slug : this.getBaseUrl() + slug;
     const res = await this.client.get(url, this.getHeaders());
     return new Document(res.body);
   }
@@ -59,15 +62,13 @@ class DefaultExtension extends MProvider {
     return { list, hasNextPage };
   }
 
-  async getLatestUpdates(page) {
-    const doc = await this.getDocument(`/episode/page/${page}/`);
+  async getPopular(page) {
+    const doc = await this.getDocument(`/قائمة-الانمي/page/${page}/`);
     return this.parseAnimeListPage(doc);
   }
 
-  // Your implementation for latest updates has been integrated.
-  async getPopular(page) {
-    // The main anime list page, sorted by latest.
-    const slug = `/قائمة-الانمي/page/${page}/`;
+  async getLatestUpdates(page) {
+    const slug = `/episode/page/${page}/`;
     const doc = await this.getDocument(slug);
     return this.parseAnimeListPage(doc);
   }
@@ -140,7 +141,8 @@ class DefaultExtension extends MProvider {
   }
 
   async getDetail(url) {
-    const doc = await this.getDocument(url.replace(this.getBaseUrl(), ""));
+    // Pass the full URL to the robust getDocument function.
+    const doc = await this.getDocument(url); 
 
     const name = doc.selectFirst("h1.anime-details-title").text;
     const imageUrl = doc.selectFirst("img.thumbnail").getSrc;
@@ -164,7 +166,6 @@ class DefaultExtension extends MProvider {
     doc.select("ul.anime-genres > li > a, div.anime-info > a").forEach(g => genre.push(g.text));
 
     const chapters = [];
-    // The selector for episodes on the detail page.
     const episodeSelector = "ul.all-episodes-list li > a";
     const episodeElements = doc.select(episodeSelector);
     for (const el of episodeElements) {
@@ -188,7 +189,8 @@ class DefaultExtension extends MProvider {
   }
 
   async getVideoList(url) {
-    const doc = await this.getDocument(url.replace(this.getBaseUrl(), ""));
+    // Pass the full URL to the robust getDocument function.
+    const doc = await this.getDocument(url);
     const streams = [];
 
     // --- Moshahda Download Links ---
