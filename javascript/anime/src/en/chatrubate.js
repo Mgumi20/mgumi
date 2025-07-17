@@ -11,7 +11,7 @@ const mangayomiSources = [{
     "hasCloudflare": true,
     "sourceCodeUrl": "",
     "apiUrl": "",
-    "version": "1.1.4",
+    "version": "1.1.5",
     "isManga": false,
     "itemType": 1,
     "isFullData": false,
@@ -77,7 +77,7 @@ class DefaultExtension extends MProvider {
     // 'getLatestUpdates' will also show "Featured" as the default.
     async getLatestUpdates(page) {
         const offset = page > 1 ? 90 * (page - 1) : 0;
-        const url = `${this.source.baseUrl}/api/ts/roomlist/room-list/?limit=90&offset=${offset}`;
+        const url = `${this.source.baseUrl}/api/ts/roomlist/room-list/?genders=f&limit=90&offset=${offset}`;
         return await this._parseApiResponse(url);
     }
 
