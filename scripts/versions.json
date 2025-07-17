@@ -32,6 +32,12 @@
         }
     },
     "anime": {
+        "Stripchat": {
+            "name": "Stripchat",
+            "version": "1.0.1",
+            "langs": "en",
+            "lastUpd": 1752775129.381827
+        },
         "H": {
             "name": "H",
             "version": "1.0.5",
