@@ -1,15 +1,25 @@
-// Metadata for the Mangayomi app
 const mangayomiSources = [{
     "name": "Stripchat",
-    "id": 20240718, // Unique ID for the source
+    "id": 987654573,
     "baseUrl": "https://stripchat.com",
     "lang": "en",
     "typeSource": "single",
     "iconUrl": "https://www.google.com/s2/favicons?sz=256&domain=stripchat.com",
+    "dateFormat": "",
+    "dateFormatLocale": "",
     "isNsfw": true,
-    "version": "1.0.0",
+    "hasCloudflare": true,
+    "sourceCodeUrl": "",
+    "apiUrl": "",
+    "version": "1.0.1",
+    "isManga": false,
     "itemType": 1,
-    "pkgPath": "anime/src/en/stripchat.js" // Path in the extension repository
+    "isFullData": false,
+    "appMinVerReq": "0.5.0",
+    "additionalParams": "",
+    "sourceCodeLanguage": 1,
+    "notes": "",
+    "pkgPath": "anime/src/en/stripchat.js"
 }];
 
 class DefaultExtension extends MProvider {
