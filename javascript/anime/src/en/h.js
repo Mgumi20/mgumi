@@ -11,7 +11,7 @@ const mangayomiSources = [{
     "hasCloudflare": true,
     "sourceCodeUrl": "",
     "apiUrl": "",
-    "version": "1.0.3",
+    "version": "1.0.4",
     "isManga": false,
     "itemType": 1,
     "isFullData": false,
@@ -42,7 +42,7 @@ class DefaultExtension extends MProvider {
 
     _parseVideoList(doc) {
         const list = [];
-        const items = doc.select("div.items-center div.w-full > a");
+        const items = doc.select("li.room_list_room.roomCard");
 
         for (const item of items) {
             const name = item.selectFirst("img")?.attr("alt") || "No Title";
@@ -57,7 +57,7 @@ class DefaultExtension extends MProvider {
     }
 
     async getPopular(page) {
-        const url = `${this.source.baseUrl}/search?order=view-count&page=${page}`;
+        const url = `${this.source.baseUrl}/tours/3/`;
         const res = await this.client.get(url, this.getHeaders());
         const doc = new Document(res.body);
         const list = this._parseVideoList(doc);
