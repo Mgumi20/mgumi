@@ -11,7 +11,7 @@ const mangayomiSources = [{
     "hasCloudflare": true,
     "sourceCodeUrl": "",
     "apiUrl": "",
-    "version": "1.1.6",
+    "version": "1.1.7",
     "isManga": false,
     "itemType": 1,
     "isFullData": false,
@@ -251,7 +251,29 @@ class DefaultExtension extends MProvider {
         }];
     }
     
+    // ====================================================================================
+    // START: NEWLY ADDED PREFERENCES
+    // ====================================================================================
+
+    /**
+     * Defines the settings that the user can configure for this source.
+     */
     getSourcePreferences() {
-        return [];
+        return [{
+            key: 'preferred_quality', // A unique key for the setting
+            listPreference: {
+                title: 'Preferred Video Quality',
+                summary: 'The application will try to select this quality by default when you open a stream.',
+                valueIndex: 0, // Sets the default selection to the first item ("Auto")
+                // The labels the user will see in the dropdown menu
+                entries: ["Auto (Live)", "1080p", "720p", "480p", "360p", "240p"],
+                // The actual values that get saved. These are used in the code to check the preference.
+                entryValues: ["auto", "1080", "720", "480", "360", "240"]
+            }
+        }];
     }
+
+    // ====================================================================================
+    // END: NEWLY ADDED PREFERENCES
+    // ====================================================================================
 }
