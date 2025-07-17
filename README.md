@@ -20,7 +20,7 @@ This repository contains the available javascript extension catalogues for the M
 
 | Name | Version | Language | Last Updated |
 |------|---------|----------|---------------|
-| Chatrubate | 1.1.5 | en | 2025/07/17 20:48 IST |
+| Chatrubate | 1.1.6 | en | 2025/07/17 21:00 IST |
 | Hstream | 1.4.1 | en | 2025/07/17 04:27 IST |
 | WitAnime | 2.0.2 | ar | 2025/07/16 19:21 IST |
 | XPrime | 2.1.1 | all | 2025/07/12 22:05 IST |
