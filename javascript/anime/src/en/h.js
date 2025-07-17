@@ -11,7 +11,7 @@ const mangayomiSources = [{
     "hasCloudflare": true,
     "sourceCodeUrl": "",
     "apiUrl": "",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "isManga": false,
     "itemType": 1,
     "isFullData": false,
@@ -21,7 +21,6 @@ const mangayomiSources = [{
     "notes": "",
     "pkgPath": "anime/src/en/h.js"
 }];
-
 
 class DefaultExtension extends MProvider {
     constructor() {
@@ -41,27 +40,24 @@ class DefaultExtension extends MProvider {
         };
     }
 
-  _parseVideoList(doc) {
-    const list = [];
-    // Change selector to target the <li> elements (room cards)
-    const items = doc.select("li.room_list_room.roomCard");
+    _parseVideoList(doc) {
+        const list = [];
+        const items = doc.select("div.items-center div.w-full > a");
 
-    for (const item of items) {
-        const anchor = item.selectFirst("a.no_select");
-        if (!anchor) continue;
+        for (const item of items) {
+            const name = item.selectFirst("img")?.attr("alt") || "No Title";
+            const link = item.getHref;
+            const imageUrl = this.source.baseUrl + item.selectFirst("img")?.getSrc;
 
-        const name = anchor.selectFirst("img")?.attr("alt")?.replace("'s chat room", "") || "No Title";
-        const link = anchor.getHref;
-        const imageUrl = anchor.selectFirst("img")?.getSrc || "";
-
-        list.push({ name, link, imageUrl });
+            if (link.includes("/hentai/")) {
+                list.push({ name, link, imageUrl });
+            }
+        }
+        return list;
     }
-    return list;
-}
-
 
     async getPopular(page) {
-        const url = `${this.source.baseUrl}/tours/3/`;
+        const url = `${this.source.baseUrl}/search?order=view-count&page=${page}`;
         const res = await this.client.get(url, this.getHeaders());
         const doc = new Document(res.body);
         const list = this._parseVideoList(doc);
@@ -180,3 +176,5 @@ class DefaultExtension extends MProvider {
         }, ];
     }
 }
+
+
