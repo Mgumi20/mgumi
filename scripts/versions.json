@@ -32,6 +32,12 @@
         }
     },
     "anime": {
+        "H": {
+            "name": "H",
+            "version": "1.0.1",
+            "langs": "en",
+            "lastUpd": 1752773251.711096
+        },
         "Chatrubate": {
             "name": "Chatrubate",
             "version": "1.1.9",
