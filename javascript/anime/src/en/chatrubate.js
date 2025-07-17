@@ -11,7 +11,7 @@ const mangayomiSources = [{
     "hasCloudflare": true,
     "sourceCodeUrl": "",
     "apiUrl": "",
-    "version": "1.1.8",
+    "version": "1.1.9",
     "isManga": false,
     "itemType": 1,
     "isFullData": false,
@@ -196,25 +196,18 @@ class DefaultExtension extends MProvider {
 
         const individualQualities = await this._extractQualitiesFromM3U8(masterM3u8Url, streamHeaders);
         
-        // Combine the "Auto" option with all the specific qualities found
         const allStreams = [masterStream, ...individualQualities];
         
-        // --- NEW LOGIC TO APPLY THE QUALITY PREFERENCE ---
         const preferredQuality = this.getPreference('preferred_quality') || 'auto';
         
-        // If the user's choice is "auto", we don't need to do anything.
         if (preferredQuality === 'auto') {
             return allStreams;
         }
         
-        // Find the index of the stream that matches the user's preference (e.g., "720p")
         const foundIndex = allStreams.findIndex(stream => stream.quality.includes(preferredQuality));
         
-        // If a matching quality is found, move it to the top of the list so it becomes the default.
         if (foundIndex > -1) {
-            // Remove the preferred stream from its current position
             const [preferredStream] = allStreams.splice(foundIndex, 1);
-            // Add it to the very beginning of the array
             allStreams.unshift(preferredStream);
         }
 
@@ -245,28 +238,43 @@ class DefaultExtension extends MProvider {
     }
     
     // ====================================================================================
-    // START: NEWLY ADDED PREFERENCES
+    // UPDATED `getSourcePreferences` FUNCTION
     // ====================================================================================
 
     /**
      * Defines the settings that the user can configure for this source.
+     * I have added 1440p and 2160p to the list to make it future-proof.
      */
     getSourcePreferences() {
         return [{
-            key: 'preferred_quality', // A unique key for the setting
+            key: 'preferred_quality',
             listPreference: {
                 title: 'Preferred Video Quality',
                 summary: 'The application will try to select this quality by default when you open a stream.',
-                valueIndex: 0, // Sets the default selection to the first item ("Auto")
-                // The labels the user will see in the dropdown menu
-                entries: ["Auto (Live)", "1080p", "720p", "480p", "360p", "240p"],
-                // The actual values that get saved. These are used in the code to check the preference.
-                entryValues: ["auto", "1080", "720", "480", "360", "240"]
+                valueIndex: 0,
+                // The labels the user will see, now including higher resolutions.
+                entries: [
+                    "Auto (Live)", 
+                    "2160p (4K)", // Added 4K
+                    "1440p (2K)", // Added 2K
+                    "1080p", 
+                    "720p", 
+                    "480p", 
+                    "360p", 
+                    "240p"
+                ],
+                // The values that get saved. They match the height in pixels.
+                entryValues: [
+                    "auto", 
+                    "2160",     // Added 4K
+                    "1440",     // Added 2K
+                    "1080", 
+                    "720", 
+                    "480", 
+                    "360", 
+                    "240"
+                ]
             }
         }];
     }
-
-    // ====================================================================================
-    // END: NEWLY ADDED PREFERENCES
-    // ====================================================================================
 }
