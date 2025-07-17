@@ -11,7 +11,7 @@ const mangayomiSources = [{
     "hasCloudflare": true,
     "sourceCodeUrl": "",
     "apiUrl": "",
-    "version": "1.0.4",
+    "version": "1.0.5",
     "isManga": false,
     "itemType": 1,
     "isFullData": false,
@@ -21,6 +21,7 @@ const mangayomiSources = [{
     "notes": "",
     "pkgPath": "anime/src/en/h.js"
 }];
+
 
 class DefaultExtension extends MProvider {
     constructor() {
@@ -36,145 +37,129 @@ class DefaultExtension extends MProvider {
         return {
             "Referer": referer,
             "Origin": this.source.baseUrl,
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         };
     }
 
+    /**
+     * This is YOUR parsing function for listing items from the site.
+     * It is designed for the card layout on the target site.
+     * @param {Document} doc - The parsed HTML document.
+     * @returns {Array<{name: string, link: string, imageUrl: string}>}
+     * @private
+     */
     _parseVideoList(doc) {
         const list = [];
+        // This selector targets the <li> elements (room cards).
         const items = doc.select("li.room_list_room.roomCard");
 
         for (const item of items) {
-            const name = item.selectFirst("img")?.attr("alt") || "No Title";
-            const link = item.getHref;
-            const imageUrl = this.source.baseUrl + item.selectFirst("img")?.getSrc;
+            const anchor = item.selectFirst("a.no_select");
+            if (!anchor) continue;
 
-            if (link.includes("/hentai/")) {
-                list.push({ name, link, imageUrl });
-            }
+            const name = anchor.selectFirst("img")?.attr("alt")?.replace("'s chat room", "").trim() || "No Title";
+            // Make sure the link is absolute.
+            const link = new URL(anchor.getHref, this.source.baseUrl).href;
+            const imageUrl = anchor.selectFirst("img")?.getSrc || "";
+
+            list.push({ name, link, imageUrl });
         }
         return list;
     }
 
+    /**
+     * This is YOUR function to get the popular list.
+     * It uses the correct URL and your parsing function.
+     */
     async getPopular(page) {
-        const url = `${this.source.baseUrl}/tours/3/`;
+        // The page number is part of the URL path on this site.
+        const url = `${this.source.baseUrl}/tours/${page}/`;
         const res = await this.client.get(url, this.getHeaders());
         const doc = new Document(res.body);
         const list = this._parseVideoList(doc);
         return { list, hasNextPage: list.length > 0 };
     }
 
+    /**
+     * The site's "new" section is similar to popular.
+     */
     async getLatestUpdates(page) {
-        const url = `${this.source.baseUrl}/search?order=recently-uploaded&page=${page}`;
+        const url = `${this.source.baseUrl}/?page=${page}`;
         const res = await this.client.get(url, this.getHeaders());
         const doc = new Document(res.body);
         const list = this._parseVideoList(doc);
         return { list, hasNextPage: list.length > 0 };
-    }
-
-    async search(query, page, filters) {
-        if (page > 1) return { list: [], hasNextPage: false };
-        const url = `${this.source.baseUrl}/search?search=${encodeURIComponent(query)}&page=${page}`;
-        const res = await this.client.get(url, this.getHeaders());
-        const doc = new Document(res.body);
-        const list = this._parseVideoList(doc);
-        return { list, hasNextPage: false };
     }
     
+    /**
+     * Search function adapted for the target site.
+     */
+    async search(query, page, filters) {
+        const url = `${this.source.baseUrl}/tag/${encodeURIComponent(query)}/?page=${page}`;
+        const res = await this.client.get(url, this.getHeaders());
+        const doc = new Document(res.body);
+        const list = this._parseVideoList(doc);
+        return { list, hasNextPage: list.length > 0 };
+    }
+
+    /**
+     * CORRECTED: Fetches details for a live stream room.
+     * Its main job is to provide a single chapter to click to start playback.
+     * @param {string} url - The URL of the live stream room.
+     */
     async getDetail(url) {
         const res = await this.client.get(url, this.getHeaders());
         const doc = new Document(res.body);
+        
+        // On a live site, we get the name and image again from the room page.
+        const name = doc.selectFirst("div.room-title h1")?.text?.trim() || "Live Stream";
+        const imageUrl = doc.selectFirst("meta[property='og:image']")?.attr("content") || "";
 
-        // استخدام محددات أكثر دقة بناءً على مثال Kotlin
-        const infoContainer = doc.selectFirst("div.relative > div.justify-between > div");
-
-        const name = infoContainer.selectFirst("div > h1")?.text?.trim() || "No Title";
-        const author = infoContainer.selectFirst("div > a:nth-of-type(3)")?.text?.trim(); // جلب اسم الفنان
-
-        // استخدام المحدد الصحيح للصورة والتأكد من أن الرابط كامل
-        let imageUrl = doc.selectFirst("div.float-left > img.object-cover")?.getSrc;
-        if (imageUrl && !imageUrl.startsWith("http")) {
-            imageUrl = this.source.baseUrl + imageUrl;
-        }
-
-        const description = doc.selectFirst("a[href]");
-        const genres = doc.select("ul.list-none > li > a").map(it => it.text);
-
-        // تحديد الحالة بشكل ثابت كما في مثال Kotlin
-        const status = 1; // 1 = Completed
-
-        // هذا المصدر يعرض فيديو واحد، لذلك ننشئ "فصل" واحد لتشغيله
+        // Create a single "chapter" to trigger the video player.
         const chapters = [{
-            name: "Watch",
-            url: url
+            name: "Watch Live",
+            url: url // Pass the room URL to getVideoList.
         }];
 
         return {
             name,
-            author,      // تمت إضافة الفنان
-            imageUrl,    // تم تحديث محدد الصورة
-            description, // تم تحديث محدد الوصف
-            genre: genres,
-            status,      // تمت إضافة الحالة
+            imageUrl,
+            description: `Live stream from ${name}.`,
             chapters,
             link: url
         };
     }
-    
+
+    /**
+     * CORRECTED: Fetches the live stream (.m3u8) URL.
+     * This is the key function that enables playback.
+     * @param {string} url - The URL of the room page.
+     */
     async getVideoList(url) {
-        const res = await this.client.get(url, this.getHeaders());
-        const doc = new Document(res.body);
+        const res = await this.client.get(url, this.getHeaders(url));
+        const body = res.body;
 
-        const subtitleLinkElement = doc.selectFirst("a[href$=.ass]");
-        if (!subtitleLinkElement) {
-            throw new Error("Could not find the subtitle download link. The page structure may have changed.");
-        }
-
-        const subtitleUrl = subtitleLinkElement.getHref;
-        const streamBaseUrl = subtitleUrl.substring(0, subtitleUrl.lastIndexOf('/') + 1);
-
-        const streams = [];
-        const resolutions = ["720", "1080", "2160"];
-
-        const subtitles = [{
-            file: subtitleUrl,
-            label: "English",
-        }];
-
-        for (const res of resolutions) {
-            const videoUrl = `${streamBaseUrl}${res}/manifest.mpd`;
-            streams.push({
-                url: videoUrl,
-                originalUrl: videoUrl,
-                // FIX: تم تعديل اسم الجودة ليشمل رابط الفيديو الكامل
-                quality: `${res}p [${videoUrl}]`,
-                headers: this.getHeaders(url),
-                subtitles: subtitles,
-            });
-        }
+        // Use a regular expression to find the HLS manifest URL in the page's script tags.
+        // This is a common pattern: "hls_source":"<url>"
+        const match = body.match(/hls_source"\s*:\s*"(.*?)"/);
         
-        const prefQuality = this.getPreference("pref_quality_key") || "1080";
-        const sortedStreams = streams.sort((a, b) => {
-            if (a.quality.includes(prefQuality)) return -1;
-            if (b.quality.includes(prefQuality)) return 1;
-            return parseInt(b.quality) - parseInt(a.quality);
-        });
+        if (!match || !match[1]) {
+            throw new Error("Could not find the live stream URL (.m3u8). The room may be offline or the site structure may have changed.");
+        }
 
-        return sortedStreams;
-    }
+        const streamUrl = match[1].replace(/\\u002F/g, "/"); // Unescape JSON-encoded slashes
 
-    getSourcePreferences() {
+        // Return the stream URL for the player.
         return [{
-            key: "pref_quality_key",
-            listPreference: {
-                title: "Preferred quality",
-                summary: "Choose your preferred video quality",
-                valueIndex: 1,
-                entries: ["720p (HD)", "1080p (FullHD)", "2160p (4K)"],
-                entryValues: ["720", "1080", "2160"],
-            },
-        }, ];
+            url: streamUrl,
+            originalUrl: streamUrl,
+            quality: "Live",
+            headers: this.getHeaders(url),
+        }];
+    }
+    
+    // No preferences needed for this source type.
+    getSourcePreferences() {
+        return [];
     }
 }
-
-
