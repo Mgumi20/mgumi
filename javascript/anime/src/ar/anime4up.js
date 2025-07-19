@@ -7,10 +7,9 @@ const mangayomiSources = [{
     "iconUrl": "https://www.google.com/s2/favicons?sz=128&domain=https://anime4up.rest",
     "typeSource": "multi",
     "itemType": 1,
-    "version": "1.1.4",
+    "version": "1.1.5",
     "pkgPath": "anime/src/ar/anime4up.js"
 }];
-
 
 class DefaultExtension extends MProvider {
   constructor() {
@@ -63,11 +62,27 @@ class DefaultExtension extends MProvider {
     return this.parseAnimeListPage(doc);
   }
 
+  // --- START OF FIX ---
   async getLatestUpdates(page) {
     const slug = `/episode/page/${page}/`;
     const doc = await this.getDocument(slug);
-    return this.parseAnimeListPage(doc);
+    const result = this.parseAnimeListPage(doc);
+
+    // After getting the list, transform the episode URLs into anime URLs
+    const fixedList = result.list.map(item => {
+        const newLink = item.link
+            // Your logic to clean the URL
+            .replace(/-%d8%a7%d9%84%d8%ad%d9%84%d9%82%d8%a9-.*$/, "")
+            .replace("/episode/", "/anime/");
+        
+        // Return the item with its link updated
+        return { ...item, link: newLink };
+    });
+
+    // Return the result object with the corrected list
+    return { list: fixedList, hasNextPage: result.hasNextPage };
   }
+  // --- END OF FIX ---
 
   async search(query, page, filters) {
     if (query) {
@@ -82,11 +97,11 @@ class DefaultExtension extends MProvider {
           const linkEl = item.selectFirst("a");
           const imgEl = item.selectFirst("img");
           if(linkEl && imgEl) {
-              list.push({
-                  name: imgEl.attr("alt"),
-                  link: linkEl.getHref,
-                  imageUrl: imgEl.getSrc,
-              });
+                list.push({
+                    name: imgEl.attr("alt"),
+                    link: linkEl.getHref,
+                    imageUrl: imgEl.getSrc,
+                });
           }
       }
       const hasNextPage = doc.selectFirst("ul.pagination > li > a.next") !== null;
@@ -160,7 +175,6 @@ class DefaultExtension extends MProvider {
     const genre = [];
     doc.select("ul.anime-genres > li > a, div.anime-info > a").forEach(g => genre.push(g.text));
 
-    // --- FIX APPLIED HERE ---
     const chapters = [];
     // Use the correct selector for the new episode list structure.
     const episodeSelector = "div#mCSB_1_container li a";
@@ -173,7 +187,6 @@ class DefaultExtension extends MProvider {
         });
     }
     chapters.reverse();
-    // --- END OF FIX ---
 
     return { name, imageUrl, description, genre, status, chapters, link: url };
   }
@@ -335,5 +348,3 @@ class DefaultExtension extends MProvider {
     ];
   }
 }
-
-// --- END OF FILE anime4up.js ---
