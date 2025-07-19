@@ -7,7 +7,7 @@ const mangayomiSources = [{
     "iconUrl": "https://www.google.com/s2/favicons?sz=128&domain=https://anime4up.rest",
     "typeSource": "multi",
     "itemType": 1,
-    "version": "1.1.5",
+    "version": "1.1.6",
     "pkgPath": "anime/src/ar/anime4up.js"
 }];
 
@@ -37,9 +37,10 @@ class DefaultExtension extends MProvider {
     return new Document(res.body);
   }
 
-  parseAnimeListPage(doc) {
+  // This function now accepts a selector to be more reusable.
+  parseAnimeListPage(doc, itemSelector) {
     const list = [];
-    const items = doc.select(".anime-card-container"); 
+    const items = doc.select(itemSelector); 
 
     for (const item of items) {
       const linkElement = item.selectFirst("a");
@@ -59,14 +60,15 @@ class DefaultExtension extends MProvider {
 
   async getPopular(page) {
     const doc = await this.getDocument(`/قائمة-الانمي/page/${page}/`);
-    return this.parseAnimeListPage(doc);
+    // Use the standard selector for popular anime page
+    return this.parseAnimeListPage(doc, ".anime-card-container");
   }
 
-  // --- START OF FIX ---
   async getLatestUpdates(page) {
     const slug = `/episode/page/${page}/`;
     const doc = await this.getDocument(slug);
-    const result = this.parseAnimeListPage(doc);
+    // Use the specific selector for the latest episodes page
+    const result = this.parseAnimeListPage(doc, ".DivEpisodeContainer");
 
     // After getting the list, transform the episode URLs into anime URLs
     const fixedList = result.list.map(item => {
@@ -82,7 +84,6 @@ class DefaultExtension extends MProvider {
     // Return the result object with the corrected list
     return { list: fixedList, hasNextPage: result.hasNextPage };
   }
-  // --- END OF FIX ---
 
   async search(query, page, filters) {
     if (query) {
@@ -92,6 +93,7 @@ class DefaultExtension extends MProvider {
       const doc = await this.getDocument(url);
       
       const list = [];
+      // Search results use the standard ".anime-card-container"
       const searchItems = doc.select(".anime-card-container");
       for(const item of searchItems){
           const linkEl = item.selectFirst("a");
@@ -141,7 +143,8 @@ class DefaultExtension extends MProvider {
     }
     
     const doc = await this.getDocument(url);
-    return this.parseAnimeListPage(doc);
+    // Filter results also use the standard selector
+    return this.parseAnimeListPage(doc, ".anime-card-container");
   }
 
   statusCode(status) {
@@ -175,18 +178,23 @@ class DefaultExtension extends MProvider {
     const genre = [];
     doc.select("ul.anime-genres > li > a, div.anime-info > a").forEach(g => genre.push(g.text));
 
+    // --- START OF FIX ---
     const chapters = [];
-    // Use the correct selector for the new episode list structure.
-    const episodeSelector = "div#mCSB_1_container li a";
+    // New selector for episodes based on user feedback.
+    const episodeSelector = ".DivEpisodeContainer";
     const episodeElements = doc.select(episodeSelector);
 
-    for (const el of episodeElements) {
-        chapters.push({
-            name: el.text.trim(),
-            url: el.getHref
-        });
+    for (const container of episodeElements) {
+        const linkElement = container.selectFirst(".episodes-card-title a");
+        if (linkElement) {
+            chapters.push({
+                name: linkElement.text.trim(),
+                url: linkElement.getHref
+            });
+        }
     }
     chapters.reverse();
+    // --- END OF FIX ---
 
     return { name, imageUrl, description, genre, status, chapters, link: url };
   }
