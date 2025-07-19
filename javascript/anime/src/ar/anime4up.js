@@ -7,7 +7,7 @@ const mangayomiSources = [{
     "iconUrl": "https://www.google.com/s2/favicons?sz=128&domain=https://anime4up.rest",
     "typeSource": "multi",
     "itemType": 1,
-    "version": "1.1.6",
+    "version": "1.1.7",
     "pkgPath": "anime/src/ar/anime4up.js"
 }];
 
@@ -178,23 +178,27 @@ class DefaultExtension extends MProvider {
     const genre = [];
     doc.select("ul.anime-genres > li > a, div.anime-info > a").forEach(g => genre.push(g.text));
 
-    // --- START OF FIX ---
-    const chapters = [];
-    // New selector for episodes based on user feedback.
-    const episodeSelector = ".DivEpisodeContainer";
-    const episodeElements = doc.select(episodeSelector);
+  // --- START OF FIX ---
+  async getLatestUpdates(page) {
+    const slug = `/episode/page/${page}/`;
+    const doc = await this.getDocument(slug);
+    const result = this.parseAnimeListPage(doc);
 
-    for (const container of episodeElements) {
-        const linkElement = container.selectFirst(".episodes-card-title a");
-        if (linkElement) {
-            chapters.push({
-                name: linkElement.text.trim(),
-                url: linkElement.getHref
-            });
-        }
-    }
-    chapters.reverse();
-    // --- END OF FIX ---
+    // After getting the list, transform the episode URLs into anime URLs
+    const fixedList = result.list.map(item => {
+        const newLink = item.link
+            // Your logic to clean the URL
+            .replace(/-%d8%a7%d9%84%d8%ad%d9%84%d9%82%d8%a9-.*$/, "")
+            .replace("/episode/", "/anime/");
+        
+        // Return the item with its link updated
+        return { ...item, link: newLink };
+    });
+
+    // Return the result object with the corrected list
+    return { list: fixedList, hasNextPage: result.hasNextPage };
+  }
+  // --- END OF FIX ---
 
     return { name, imageUrl, description, genre, status, chapters, link: url };
   }
